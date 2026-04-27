@@ -14,29 +14,31 @@ All colors MUST be HSL.
     --ghana-green: 150 100% 21%;    /* #006B3F */
     --ghana-brown: 27 100% 9%;      /* #2C1200 */
     --cream: 40 50% 97%;            /* warm paper */
-    --navy: 220 55% 12%;            /* deep navy background */
+    --navy: 220 55% 12%;            /* (legacy token, unused) */
     --navy-soft: 220 45% 18%;
-    --rose-gold: 18 60% 68%;        /* #E0A89A-ish rose gold */
+    --rose-gold: 18 60% 68%;        /* (legacy token, unused) */
+    --choc: 25 45% 28%;             /* milk chocolate brown */
+    --choc-soft: 25 40% 36%;
 
-    --background: 220 55% 12%;
+    --background: 25 45% 28%;
     --foreground: 0 0% 100%;
 
-    --card: 220 45% 18%;
+    --card: 25 40% 36%;
     --card-foreground: 0 0% 100%;
 
-    --popover: 220 45% 18%;
+    --popover: 25 40% 36%;
     --popover-foreground: 0 0% 100%;
 
     /* Primary = Ghana green (used for Romance "trust" actions) */
     --primary: 150 100% 21%;
     --primary-foreground: 40 50% 97%;
 
-    /* Secondary = navy soft */
-    --secondary: 220 40% 22%;
+    /* Secondary = chocolate soft */
+    --secondary: 25 38% 40%;
     --secondary-foreground: 0 0% 100%;
 
-    --muted: 220 35% 22%;
-    --muted-foreground: 220 15% 75%;
+    --muted: 25 30% 38%;
+    --muted-foreground: 30 25% 85%;
 
     --accent: 49 97% 53%;
     --accent-foreground: 27 100% 9%;
@@ -44,8 +46,8 @@ All colors MUST be HSL.
     --destructive: 358 86% 52%;
     --destructive-foreground: 40 50% 97%;
 
-    --border: 220 30% 28%;
-    --input: 220 30% 28%;
+    --border: 25 30% 45%;
+    --input: 25 30% 45%;
     --ring: 150 100% 21%;
 
     --radius: 1rem;
@@ -60,7 +62,7 @@ All colors MUST be HSL.
     --gradient-flag: linear-gradient(180deg, hsl(var(--ghana-red)) 0%, hsl(var(--ghana-red)) 33%, hsl(var(--ghana-gold)) 33%, hsl(var(--ghana-gold)) 66%, hsl(var(--ghana-green)) 66%, hsl(var(--ghana-green)) 100%);
     --gradient-romance: linear-gradient(135deg, hsl(49 97% 60%), hsl(35 95% 50%));
     --gradient-spark: linear-gradient(135deg, hsl(358 86% 52%), hsl(340 80% 40%));
-    --gradient-warm: linear-gradient(180deg, hsl(220 55% 12%) 0%, hsl(220 50% 16%) 100%);
+    --gradient-warm: linear-gradient(180deg, hsl(25 45% 28%) 0%, hsl(25 40% 22%) 100%);
 
     /* Shadows */
     --shadow-warm: 0 10px 30px -12px hsl(27 100% 9% / 0.18);
