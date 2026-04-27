@@ -22,10 +22,10 @@ export function Logo({ size = "md", showWordmark = true, className }: LogoProps)
       <img src={logoSrc} alt="GH SUƆMƆ heart logo" width={s.logo} height={s.logo} className="shrink-0" />
       {showWordmark && (
         <div className="leading-tight">
-          <h1 className={cn("font-display font-extrabold tracking-tight text-ghana-brown", s.title)}>
+          <h1 className={cn("font-display font-extrabold tracking-tight text-rose-gold", s.title)}>
             {BRAND.name}
           </h1>
-          <p className={cn("font-body uppercase tracking-[0.2em] text-ghana-green/80", s.tag)}>
+          <p className={cn("font-body uppercase tracking-[0.2em] text-white/90", s.tag)}>
             {BRAND.tagline}
           </p>
         </div>
