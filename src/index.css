@@ -8,35 +8,62 @@ All colors MUST be HSL.
 
 @layer base {
   :root {
-    --background: 0 0% 100%;
-    --foreground: 222.2 84% 4.9%;
+    /* GH SUƆMƆ — Ghana flag inspired palette */
+    --ghana-red: 358 86% 52%;       /* #EE1C25 */
+    --ghana-gold: 49 97% 53%;       /* #FCD116 */
+    --ghana-green: 150 100% 21%;    /* #006B3F */
+    --ghana-brown: 27 100% 9%;      /* #2C1200 */
+    --cream: 40 50% 97%;            /* warm paper */
+
+    --background: 40 50% 97%;
+    --foreground: 27 100% 9%;
 
     --card: 0 0% 100%;
-    --card-foreground: 222.2 84% 4.9%;
+    --card-foreground: 27 100% 9%;
 
     --popover: 0 0% 100%;
-    --popover-foreground: 222.2 84% 4.9%;
+    --popover-foreground: 27 100% 9%;
 
-    --primary: 222.2 47.4% 11.2%;
-    --primary-foreground: 210 40% 98%;
+    /* Primary = Ghana green (used for Romance "trust" actions) */
+    --primary: 150 100% 21%;
+    --primary-foreground: 40 50% 97%;
 
-    --secondary: 210 40% 96.1%;
-    --secondary-foreground: 222.2 47.4% 11.2%;
+    /* Secondary = warm tan */
+    --secondary: 40 30% 90%;
+    --secondary-foreground: 27 100% 9%;
 
-    --muted: 210 40% 96.1%;
-    --muted-foreground: 215.4 16.3% 46.9%;
+    --muted: 40 25% 92%;
+    --muted-foreground: 27 20% 35%;
 
-    --accent: 210 40% 96.1%;
-    --accent-foreground: 222.2 47.4% 11.2%;
+    --accent: 49 97% 53%;
+    --accent-foreground: 27 100% 9%;
 
-    --destructive: 0 84.2% 60.2%;
-    --destructive-foreground: 210 40% 98%;
+    --destructive: 358 86% 52%;
+    --destructive-foreground: 40 50% 97%;
 
-    --border: 214.3 31.8% 91.4%;
-    --input: 214.3 31.8% 91.4%;
-    --ring: 222.2 84% 4.9%;
+    --border: 27 20% 85%;
+    --input: 27 20% 85%;
+    --ring: 150 100% 21%;
 
-    --radius: 0.5rem;
+    --radius: 1rem;
+
+    /* Mode accents */
+    --romance: 49 97% 45%;          /* gold */
+    --romance-foreground: 27 100% 9%;
+    --spark: 358 86% 52%;           /* red */
+    --spark-foreground: 40 50% 97%;
+
+    /* Gradients */
+    --gradient-flag: linear-gradient(180deg, hsl(var(--ghana-red)) 0%, hsl(var(--ghana-red)) 33%, hsl(var(--ghana-gold)) 33%, hsl(var(--ghana-gold)) 66%, hsl(var(--ghana-green)) 66%, hsl(var(--ghana-green)) 100%);
+    --gradient-romance: linear-gradient(135deg, hsl(49 97% 60%), hsl(35 95% 50%));
+    --gradient-spark: linear-gradient(135deg, hsl(358 86% 52%), hsl(340 80% 40%));
+    --gradient-warm: linear-gradient(180deg, hsl(40 50% 97%) 0%, hsl(40 60% 92%) 100%);
+
+    /* Shadows */
+    --shadow-warm: 0 10px 30px -12px hsl(27 100% 9% / 0.18);
+    --shadow-card: 0 4px 16px -4px hsl(27 100% 9% / 0.12);
+    --shadow-romance: 0 12px 32px -10px hsl(49 97% 45% / 0.45);
+    --shadow-spark: 0 12px 32px -10px hsl(358 86% 52% / 0.45);
 
     --sidebar-background: 0 0% 98%;
 
@@ -56,7 +83,7 @@ All colors MUST be HSL.
   }
 
   .dark {
-    --background: 222.2 84% 4.9%;
+    --background: 27 100% 9%;
     --foreground: 210 40% 98%;
 
     --card: 222.2 84% 4.9%;
@@ -100,6 +127,19 @@ All colors MUST be HSL.
   }
 
   body {
-    @apply bg-background text-foreground;
+    @apply bg-background text-foreground font-body antialiased;
+    font-feature-settings: "ss01", "cv11";
+  }
+
+  h1, h2, h3, h4, h5 {
+    @apply font-display;
+  }
+
+  /* Photo deterrence — disable selection + dragging on photo elements */
+  .no-snap {
+    -webkit-user-select: none;
+    user-select: none;
+    -webkit-user-drag: none;
+    -webkit-touch-callout: none;
   }
 }

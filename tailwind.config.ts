@@ -13,12 +13,42 @@ export default {
       },
     },
     extend: {
+      fontFamily: {
+        display: ['"Playfair Display"', 'serif'],
+        body: ['"DM Sans"', 'system-ui', 'sans-serif'],
+      },
+      backgroundImage: {
+        'gradient-flag': 'var(--gradient-flag)',
+        'gradient-romance': 'var(--gradient-romance)',
+        'gradient-spark': 'var(--gradient-spark)',
+        'gradient-warm': 'var(--gradient-warm)',
+      },
+      boxShadow: {
+        warm: 'var(--shadow-warm)',
+        card: 'var(--shadow-card)',
+        romance: 'var(--shadow-romance)',
+        spark: 'var(--shadow-spark)',
+      },
       colors: {
         border: "hsl(var(--border))",
         input: "hsl(var(--input))",
         ring: "hsl(var(--ring))",
         background: "hsl(var(--background))",
         foreground: "hsl(var(--foreground))",
+        ghana: {
+          red: "hsl(var(--ghana-red))",
+          gold: "hsl(var(--ghana-gold))",
+          green: "hsl(var(--ghana-green))",
+          brown: "hsl(var(--ghana-brown))",
+        },
+        romance: {
+          DEFAULT: "hsl(var(--romance))",
+          foreground: "hsl(var(--romance-foreground))",
+        },
+        spark: {
+          DEFAULT: "hsl(var(--spark))",
+          foreground: "hsl(var(--spark-foreground))",
+        },
         primary: {
           DEFAULT: "hsl(var(--primary))",
           foreground: "hsl(var(--primary-foreground))",

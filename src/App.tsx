@@ -1,9 +1,21 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Route, Routes } from "react-router-dom";
+import { BrowserRouter, Route, Routes, Navigate } from "react-router-dom";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
-import Index from "./pages/Index.tsx";
+import { AuthProvider } from "@/hooks/useAuth";
+import { AppShell } from "@/components/layout/AppShell";
+import { ProtectedRoute } from "@/components/layout/ProtectedRoute";
+import Landing from "./pages/Landing";
+import AuthPage from "./pages/Auth";
+import Onboarding from "./pages/Onboarding";
+import Discover from "./pages/app/Discover";
+import Matches from "./pages/app/Matches";
+import Chat from "./pages/app/Chat";
+import Verify from "./pages/app/Verify";
+import Profile from "./pages/app/Profile";
+import Safety from "./pages/app/Safety";
+import Admin from "./pages/app/Admin";
 import NotFound from "./pages/NotFound.tsx";
 
 const queryClient = new QueryClient();
@@ -14,11 +26,26 @@ const App = () => (
       <Toaster />
       <Sonner />
       <BrowserRouter>
-        <Routes>
-          <Route path="/" element={<Index />} />
-          {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
-          <Route path="*" element={<NotFound />} />
-        </Routes>
+        <AuthProvider>
+          <Routes>
+            <Route path="/" element={<Landing />} />
+            <Route path="/auth" element={<AuthPage />} />
+            <Route path="/onboarding" element={<ProtectedRoute><Onboarding /></ProtectedRoute>} />
+            <Route path="/app" element={<ProtectedRoute><AppShell /></ProtectedRoute>}>
+              <Route index element={<Navigate to="/app/discover" replace />} />
+              <Route path="discover" element={<Discover />} />
+              <Route path="matches" element={<Matches />} />
+              <Route path="chat" element={<Chat />} />
+              <Route path="chat/:id" element={<Chat />} />
+              <Route path="verify" element={<Verify />} />
+              <Route path="profile" element={<Profile />} />
+              <Route path="safety" element={<Safety />} />
+              <Route path="admin" element={<ProtectedRoute adminOnly><Admin /></ProtectedRoute>} />
+            </Route>
+            <Route path="*" element={<NotFound />} />
+          
+        </AuthProvider>
+      
       </BrowserRouter>
     </TooltipProvider>
   </QueryClientProvider>
