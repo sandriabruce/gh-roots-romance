@@ -41,6 +41,8 @@ export default {
           green: "hsl(var(--ghana-green))",
           brown: "hsl(var(--ghana-brown))",
         },
+        navy: "hsl(var(--navy))",
+        "rose-gold": "hsl(var(--rose-gold))",
         romance: {
           DEFAULT: "hsl(var(--romance))",
           foreground: "hsl(var(--romance-foreground))",
