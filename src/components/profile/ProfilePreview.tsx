@@ -64,7 +64,7 @@ export function ProfilePreview({ userId }: { userId: string }) {
         .eq("id", userId)
         .maybeSingle();
       if (!cancelled) {
-        setProfile(sanitize(data as Record<string, unknown> | null));
+        setProfile(sanitize(data as unknown as Record<string, unknown> | null));
         setLoading(false);
       }
     })();
