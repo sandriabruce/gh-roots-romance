@@ -14,20 +14,32 @@ const symbols = [
   { src: abii, size: 66 },
 ];
 
-// Hand-tuned scattered positions (percent) across a 3x2 tile repeat.
+// Hand-tuned scattered positions — each of the 6 symbols appears 3 times (18 total per tile).
 const spots: { top: string; left: string; i: number; rot: number }[] = [
-  { top: "6%", left: "8%", i: 0, rot: -8 },
-  { top: "14%", left: "48%", i: 2, rot: 12 },
-  { top: "9%", left: "82%", i: 4, rot: -14 },
-  { top: "32%", left: "22%", i: 3, rot: 18 },
-  { top: "38%", left: "68%", i: 5, rot: -6 },
-  { top: "52%", left: "6%", i: 1, rot: 10 },
-  { top: "58%", left: "44%", i: 0, rot: -20 },
-  { top: "60%", left: "86%", i: 2, rot: 6 },
-  { top: "78%", left: "20%", i: 4, rot: -4 },
-  { top: "82%", left: "58%", i: 3, rot: 16 },
-  { top: "88%", left: "90%", i: 5, rot: -10 },
-  { top: "24%", left: "92%", i: 1, rot: 22 },
+  // dwennimmen (0)
+  { top: "4%",  left: "10%", i: 0, rot: -8 },
+  { top: "46%", left: "52%", i: 0, rot: 14 },
+  { top: "82%", left: "18%", i: 0, rot: -22 },
+  // sankofa (1)
+  { top: "18%", left: "72%", i: 1, rot: 10 },
+  { top: "54%", left: "8%",  i: 1, rot: -12 },
+  { top: "90%", left: "64%", i: 1, rot: 20 },
+  // hinmeisee (2)
+  { top: "10%", left: "40%", i: 2, rot: 12 },
+  { top: "40%", left: "84%", i: 2, rot: -16 },
+  { top: "74%", left: "44%", i: 2, rot: 6 },
+  // atswa (3)
+  { top: "26%", left: "24%", i: 3, rot: 18 },
+  { top: "60%", left: "70%", i: 3, rot: -10 },
+  { top: "94%", left: "4%",  i: 3, rot: 22 },
+  // atoobi (4)
+  { top: "8%",  left: "88%", i: 4, rot: -14 },
+  { top: "34%", left: "4%",  i: 4, rot: 8 },
+  { top: "68%", left: "30%", i: 4, rot: -18 },
+  // abii (5)
+  { top: "22%", left: "58%", i: 5, rot: -6 },
+  { top: "56%", left: "36%", i: 5, rot: 16 },
+  { top: "86%", left: "86%", i: 5, rot: -4 },
 ];
 
 /**
