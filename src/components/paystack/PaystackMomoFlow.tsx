@@ -26,6 +26,7 @@ import { Card } from "@/components/ui/card";
 import { toast } from "@/hooks/use-toast";
 import { ShieldCheck, Smartphone, CheckCircle2 } from "lucide-react";
 import { PAYSTACK_PUBLIC_KEY, isPaystackTestMode } from "@/lib/paystack";
+import { supabase } from "@/integrations/supabase/client";
 
 const NETWORKS = [
   { id: "mtn", label: "MTN Mobile Money" },
@@ -40,14 +41,16 @@ interface Props {
   onOpenChange: (open: boolean) => void;
   planName: string;
   priceLabel: string;
+  planId?: "verified" | "premium" | "diamond";
 }
 
-export function PaystackMomoFlow({ open, onOpenChange, planName, priceLabel }: Props) {
+export function PaystackMomoFlow({ open, onOpenChange, planName, priceLabel, planId }: Props) {
   const [step, setStep] = useState<Step>(1);
   const [network, setNetwork] = useState<string>("");
   const [phone, setPhone] = useState("");
   const [otp, setOtp] = useState("");
   const [submitting, setSubmitting] = useState(false);
+  const [reference, setReference] = useState<string | null>(null);
 
   const reset = () => {
     setStep(1);
@@ -55,6 +58,7 @@ export function PaystackMomoFlow({ open, onOpenChange, planName, priceLabel }: P
     setPhone("");
     setOtp("");
     setSubmitting(false);
+    setReference(null);
   };
 
   const handleClose = (next: boolean) => {
@@ -76,33 +80,72 @@ export function PaystackMomoFlow({ open, onOpenChange, planName, priceLabel }: P
     setStep(2);
   };
 
-  const requestOtp = () => {
+  const requestOtp = async () => {
+    if (!planId) {
+      toast({ title: "Plan unavailable", description: "Please pick a paid plan." });
+      return;
+    }
     setSubmitting(true);
-    // Placeholder: real charge happens via paystack-initialize edge function.
-    setTimeout(() => {
-      setSubmitting(false);
-      setStep(3);
-      toast({
-        title: "OTP sent",
-        description: `Check ${phone} for a 6-digit code from Paystack.`,
+    try {
+      const { data, error } = await supabase.functions.invoke("paystack-initialize", {
+        body: { plan: planId, phone, provider: network },
       });
-    }, 800);
+      if (error) throw error;
+      if (data?.error) throw new Error(data.error);
+      setReference(data.reference);
+      const status = data.status as string | undefined;
+      if (status === "send_otp") {
+        setStep(3);
+        toast({ title: "OTP sent", description: data.display_text || `Check ${phone} for a code from Paystack.` });
+      } else if (status === "pay_offline") {
+        toast({ title: "Approve on your phone", description: data.display_text || "Dial your MoMo menu to approve the charge." });
+        handleClose(false);
+      } else if (status === "success") {
+        toast({ title: "Payment successful", description: "Your plan will activate shortly." });
+        handleClose(false);
+      } else {
+        toast({ title: "Charge submitted", description: data.message || "Awaiting Paystack confirmation." });
+        handleClose(false);
+      }
+    } catch (e) {
+      toast({
+        title: "Could not start payment",
+        description: e instanceof Error ? e.message : "Try again.",
+      });
+    } finally {
+      setSubmitting(false);
+    }
   };
 
-  const confirmOtp = () => {
+  const confirmOtp = async () => {
     if (otp.length !== 6) {
       toast({ title: "Enter the 6-digit code", description: "Check your SMS from Paystack." });
       return;
     }
+    if (!reference) {
+      toast({ title: "Missing reference", description: "Restart the payment." });
+      return;
+    }
     setSubmitting(true);
-    setTimeout(() => {
-      setSubmitting(false);
+    try {
+      const { data, error } = await supabase.functions.invoke("paystack-submit-otp", {
+        body: { reference, otp },
+      });
+      if (error) throw error;
+      if (data?.error) throw new Error(data.error);
       toast({
         title: "Payment submitted",
         description: "We'll confirm your upgrade once Paystack verifies the charge.",
       });
       handleClose(false);
-    }, 900);
+    } catch (e) {
+      toast({
+        title: "OTP rejected",
+        description: e instanceof Error ? e.message : "Try again.",
+      });
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   const networkLabel = NETWORKS.find((n) => n.id === network)?.label ?? "";

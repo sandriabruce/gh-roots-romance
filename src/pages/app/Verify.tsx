@@ -15,7 +15,7 @@ const PLANS: { id: Plan; name: string; price: string; note: string; payable: boo
 ];
 
 export default function Verify() {
-  const [selected, setSelected] = useState<{ name: string; price: string } | null>(null);
+  const [selected, setSelected] = useState<{ id: Plan; name: string; price: string } | null>(null);
   const { plan: currentPlan, trial } = useEntitlements();
 
   return (
@@ -55,7 +55,7 @@ export default function Verify() {
                   size="sm"
                   disabled={isCurrent || !p.payable}
                   className="mt-1 bg-ghana-gold text-ghana-brown hover:bg-ghana-gold/90 disabled:opacity-60"
-                  onClick={() => p.payable && !isCurrent && setSelected({ name: p.name, price: p.price })}
+                  onClick={() => p.payable && !isCurrent && setSelected({ id: p.id, name: p.name, price: p.price })}
                 >
                   {isCurrent ? "Current" : p.payable ? "Choose" : "Free"}
                 </Button>
@@ -70,6 +70,7 @@ export default function Verify() {
         onOpenChange={(o) => !o && setSelected(null)}
         planName={selected?.name ?? ""}
         priceLabel={selected?.price ?? ""}
+        planId={selected && selected.id !== "explorer" ? (selected.id as "verified" | "premium" | "diamond") : undefined}
       />
     </div>
   );
