@@ -27,10 +27,12 @@ export function TrialBadge({ className = "" }: { className?: string }) {
   return (
     <Link
       to="/app/verify"
-      className={`flex items-center justify-between gap-2 rounded-2xl border-2 border-ghana-red/40 bg-ghana-red/10 px-3 py-2 text-xs text-ghana-red ${className}`}
+      role="status"
+      aria-label="Free trial ended. Upgrade your plan."
+      className={`flex items-center justify-between gap-2 rounded-2xl border-2 border-destructive/60 bg-destructive/10 px-3 py-2 text-xs text-destructive dark:border-destructive dark:bg-destructive/20 dark:text-destructive-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-destructive focus-visible:ring-offset-2 focus-visible:ring-offset-background ${className}`}
     >
-      <span className="font-medium text-ghana-red">Your free trial has ended.</span>
-      <span className="font-display font-bold text-ghana-red">Upgrade →</span>
+      <span className="font-medium">Your free trial has ended.</span>
+      <span className="font-display font-bold underline-offset-2 hover:underline">Upgrade →</span>
     </Link>
   );
 }
