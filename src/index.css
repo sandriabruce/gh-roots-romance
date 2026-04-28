@@ -174,9 +174,8 @@ All colors MUST be HSL.
   /* Gold drop shadow on every brown text element across the app */
   .text-ghana-brown {
     text-shadow:
-      0 1px 0 hsl(var(--ghana-gold) / 0.45),
-      0 2px 6px hsl(var(--ghana-gold) / 0.55),
-      0 4px 14px hsl(var(--ghana-gold) / 0.35);
+      0 1px 0 hsl(var(--ghana-gold) / 0.5),
+      0 0 1px hsl(var(--ghana-gold) / 0.45);
   }
 
   /* Embossed 3D effect for the GH SUƆMƆ wordmark */
