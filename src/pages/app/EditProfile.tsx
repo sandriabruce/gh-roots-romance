@@ -8,13 +8,22 @@ import { useAuth } from "@/hooks/useAuth";
 import { useProfile } from "@/hooks/useProfile";
 import { supabase } from "@/integrations/supabase/client";
 import { INTERESTS, PROMPTS } from "@/lib/brand";
-import { imageHasFace } from "@/features/face/detectFace";
+import { imageHasFace, type FaceCheckCode } from "@/features/face/detectFace";
 import { toast } from "sonner";
 import { useQueryClient } from "@tanstack/react-query";
-import { ArrowLeft, Upload, X } from "lucide-react";
+import { ArrowLeft, Upload, X, AlertTriangle, Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 type PromptItem = { q: string; a: string };
+
+type RejectedPhoto = {
+  id: string;
+  fileName: string;
+  previewUrl: string;
+  code: FaceCheckCode;
+  reason: string;
+  tip?: string;
+};
 
 export default function EditProfile() {
   const { user } = useAuth();
@@ -27,6 +36,8 @@ export default function EditProfile() {
   const [interests, setInterests] = useState<string[]>([]);
   const [prompts, setPrompts] = useState<PromptItem[]>([]);
   const [saving, setSaving] = useState(false);
+  const [rejected, setRejected] = useState<RejectedPhoto[]>([]);
+  const [uploadingNames, setUploadingNames] = useState<string[]>([]);
 
   useEffect(() => {
     if (!profile) return;
@@ -37,17 +48,93 @@ export default function EditProfile() {
     setPrompts(p.length ? p : [{ q: PROMPTS[0], a: "" }]);
   }, [profile]);
 
-  async function uploadPhoto(file: File) {
-    if (!user) return;
-    if (photos.length >= 6) { toast.error("You can have up to 6 photos."); return; }
-    const check = await imageHasFace(file);
-    if (!check.ok) { toast.error(check.reason!); return; }
-    const path = `${user.id}/${Date.now()}-${file.name.replace(/[^a-zA-Z0-9.]/g, "_")}`;
-    const { error } = await supabase.storage.from("profile-photos").upload(path, file, { upsert: false });
-    if (error) { toast.error(error.message); return; }
-    const { data: urlData } = await supabase.storage.from("profile-photos").createSignedUrl(path, 60 * 60 * 24 * 365);
-    if (urlData?.signedUrl) setPhotos((arr) => [...arr, urlData.signedUrl]);
+  async function uploadPhotos(files: File[]) {
+    if (!user || files.length === 0) return;
+    const remaining = Math.max(0, 6 - photos.length);
+    if (remaining === 0) { toast.error("You already have 6 photos. Remove one to add another."); return; }
+    const toProcess = files.slice(0, remaining);
+    if (files.length > remaining) {
+      toast.message(`Only the first ${remaining} photo${remaining === 1 ? "" : "s"} will be processed (6 max).`);
+    }
+
+    const newRejections: RejectedPhoto[] = [];
+    let acceptedCount = 0;
+
+    for (const file of toProcess) {
+      setUploadingNames((arr) => [...arr, file.name]);
+      try {
+        const check = await imageHasFace(file);
+        if (!check.ok) {
+          newRejections.push({
+            id: `${Date.now()}-${file.name}-${Math.random()}`,
+            fileName: file.name,
+            previewUrl: URL.createObjectURL(file),
+            code: check.code,
+            reason: check.reason ?? "This photo couldn't be uploaded.",
+            tip: check.tip,
+          });
+          continue;
+        }
+        const path = `${user.id}/${Date.now()}-${file.name.replace(/[^a-zA-Z0-9.]/g, "_")}`;
+        const { error } = await supabase.storage.from("profile-photos").upload(path, file, { upsert: false });
+        if (error) {
+          newRejections.push({
+            id: `${Date.now()}-${file.name}-${Math.random()}`,
+            fileName: file.name,
+            previewUrl: URL.createObjectURL(file),
+            code: "unreadable",
+            reason: error.message,
+            tip: "Try again, or use a different file.",
+          });
+          continue;
+        }
+        const { data: urlData } = await supabase.storage.from("profile-photos").createSignedUrl(path, 60 * 60 * 24 * 365);
+        if (urlData?.signedUrl) {
+          setPhotos((arr) => [...arr, urlData.signedUrl]);
+          acceptedCount++;
+        }
+      } finally {
+        setUploadingNames((arr) => {
+          const idx = arr.indexOf(file.name);
+          if (idx === -1) return arr;
+          const next = arr.slice();
+          next.splice(idx, 1);
+          return next;
+        });
+      }
+    }
+
+    if (newRejections.length > 0) {
+      setRejected((arr) => [...newRejections, ...arr]);
+      const names = newRejections.map((r) => r.fileName).join(", ");
+      toast.error(
+        newRejections.length === 1
+          ? `"${newRejections[0].fileName}" was rejected — see details below.`
+          : `${newRejections.length} photos rejected: ${names}. See details below.`
+      );
+    }
+    if (acceptedCount > 0) {
+      toast.success(`${acceptedCount} photo${acceptedCount === 1 ? "" : "s"} added.`);
+    }
   }
+
+  function dismissRejection(id: string) {
+    setRejected((arr) => {
+      const target = arr.find((r) => r.id === id);
+      if (target) URL.revokeObjectURL(target.previewUrl);
+      return arr.filter((r) => r.id !== id);
+    });
+  }
+
+  function clearAllRejections() {
+    rejected.forEach((r) => URL.revokeObjectURL(r.previewUrl));
+    setRejected([]);
+  }
+
+  useEffect(() => {
+    return () => { rejected.forEach((r) => URL.revokeObjectURL(r.previewUrl)); };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   function removePhoto(idx: number) {
     setPhotos((arr) => arr.filter((_, i) => i !== idx));
@@ -127,6 +214,68 @@ export default function EditProfile() {
           <h2 className="font-display text-lg font-bold text-ghana-gold">Photos</h2>
           <span className="text-xs text-muted-foreground">{photos.length}/6</span>
         </div>
+        <p className="text-xs text-muted-foreground">
+          Use clear, solo photos of yourself (face visible, no sunglasses, under 8 MB). JPG or PNG work best.
+        </p>
+        {rejected.length > 0 && (
+          <div
+            role="alert"
+            aria-live="polite"
+            className="rounded-xl border border-destructive/60 bg-destructive/10 p-3 space-y-2"
+          >
+            <div className="flex items-center justify-between gap-2">
+              <div className="flex items-center gap-2 text-destructive">
+                <AlertTriangle className="h-4 w-4" />
+                <p className="text-sm font-semibold">
+                  {rejected.length} photo{rejected.length === 1 ? "" : "s"} couldn't be added
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={clearAllRejections}
+                className="text-xs text-destructive hover:underline"
+              >
+                Dismiss all
+              </button>
+            </div>
+            <ul className="space-y-2">
+              {rejected.map((r) => (
+                <li key={r.id} className="flex items-start gap-3 rounded-lg bg-background/60 p-2">
+                  <img
+                    src={r.previewUrl}
+                    alt=""
+                    className="h-12 w-12 flex-shrink-0 rounded-md object-cover"
+                  />
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate text-xs font-medium text-foreground" title={r.fileName}>
+                      {r.fileName}
+                    </p>
+                    <p className="text-xs text-destructive">{r.reason}</p>
+                    {r.tip && <p className="mt-0.5 text-xs text-muted-foreground">{r.tip}</p>}
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => dismissRejection(r.id)}
+                    aria-label={`Dismiss rejection for ${r.fileName}`}
+                    className="rounded-full p-1 text-muted-foreground hover:bg-muted hover:text-foreground"
+                  >
+                    <X className="h-3.5 w-3.5" />
+                  </button>
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
+        {uploadingNames.length > 0 && (
+          <div
+            role="status"
+            aria-live="polite"
+            className="flex items-center gap-2 rounded-lg bg-muted px-3 py-2 text-xs text-muted-foreground"
+          >
+            <Loader2 className="h-3.5 w-3.5 animate-spin" />
+            Checking {uploadingNames.length} photo{uploadingNames.length === 1 ? "" : "s"}…
+          </div>
+        )}
         <div className="grid grid-cols-3 gap-3">
           {Array.from({ length: 6 }).map((_, i) => (
             <div key={i} className="relative aspect-square rounded-2xl border-2 border-dashed bg-muted overflow-hidden flex items-center justify-center">
@@ -149,8 +298,13 @@ export default function EditProfile() {
                   <input
                     type="file"
                     accept="image/*"
+                    multiple
                     className="hidden"
-                    onChange={(e) => { const f = e.target.files?.[0]; if (f) uploadPhoto(f); e.target.value = ""; }}
+                    onChange={(e) => {
+                      const files = Array.from(e.target.files ?? []);
+                      if (files.length) uploadPhotos(files);
+                      e.target.value = "";
+                    }}
                   />
                 </label>
               )}
