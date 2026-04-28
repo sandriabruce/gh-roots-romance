@@ -66,7 +66,7 @@ export default function Discover() {
       </>
       )}
       <section>
-        <h3 className="font-display text-xl font-bold text-ghana-brown">Real love stories</h3>
+        <h3 className="font-display text-xl font-bold text-ghana-gold">Real love stories</h3>
         <div className="mt-3 flex gap-3 overflow-x-auto pb-2">
           {SAMPLE_COUPLES.map((c) => <CoupleCard key={c.id} couple={c} />)}
         </div>

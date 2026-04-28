@@ -22,7 +22,7 @@ export default function Landing() {
         <div className="mt-10 grid grid-cols-4 gap-3 text-center">
           {[["94+","couples"],["21","countries"],["2.8k+","members"],["7","weddings"]].map(([n,l]) => (
             <div key={l} className="rounded-2xl border-2 border-ghana-gold/40 bg-card p-3">
-              <div className="font-display text-xl font-bold text-ghana-brown">{n}</div>
+              <div className="font-display text-xl font-bold text-ghana-gold">{n}</div>
               <div className="text-[11px] uppercase tracking-wider text-muted-foreground">{l}</div>
             </div>
           ))}
