@@ -6,12 +6,12 @@ import atoobi from "@/assets/adinkra/atoobi.png";
 import abii from "@/assets/adinkra/abii.png";
 
 const symbols = [
-  { src: dwennimmen, size: 64 },
-  { src: sankofa, size: 56 },
-  { src: hinmeisee, size: 72 },
-  { src: atswa, size: 52 },
-  { src: atoobi, size: 58 },
-  { src: abii, size: 66 },
+  { src: dwennimmen, size: 160 },
+  { src: sankofa, size: 144 },
+  { src: hinmeisee, size: 176 },
+  { src: atswa, size: 136 },
+  { src: atoobi, size: 152 },
+  { src: abii, size: 168 },
 ];
 
 // Hand-tuned scattered positions — each of the 6 symbols appears 3 times (18 total per tile).
