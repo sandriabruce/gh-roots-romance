@@ -148,3 +148,14 @@ All colors MUST be HSL.
     -webkit-touch-callout: none;
   }
 }
+
+@layer components {
+  /* Thin gold outline around section/page headers */
+  .heading-gold {
+    display: inline-block;
+    border: 1px solid hsl(var(--ghana-gold));
+    border-radius: 0.5rem;
+    padding: 0.35rem 0.9rem;
+    color: hsl(var(--ghana-gold));
+  }
+}
