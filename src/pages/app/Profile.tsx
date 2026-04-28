@@ -23,8 +23,8 @@ export default function Profile() {
         <SafeText as="div" className="heading-gold font-display text-2xl font-bold" fallbackClassName="text-foreground">
           {displayName}
         </SafeText>
-        <div className="mt-2 text-xs uppercase tracking-wider text-[#edf8f2]">Mode: {profile?.mode ?? "romance"}</div>
-        <div className="mt-1 text-xs uppercase tracking-wider text-[#f1f9f5]">
+        <div className="mt-2 text-xs uppercase tracking-wider text-ghana-gold">Mode: {profile?.mode ?? "romance"}</div>
+        <div className="mt-1 text-xs uppercase tracking-wider text-ghana-gold">
           Plan: {planLabel}
           {trial.active && (plan === "explorer" || plan === "verified") && (
             <span className="ml-2 normal-case tracking-normal text-ghana-brown/70">
@@ -32,7 +32,7 @@ export default function Profile() {
             </span>
           )}
         </div>
-        <div className="mt-1 text-xs uppercase tracking-wider text-[#edf8f2]">
+        <div className="mt-1 text-xs uppercase tracking-wider text-ghana-gold">
           Chat: {limits.canChat ? "unlocked" : "locked"} · Matches/week: {limits.weeklyMatchLimit ?? "unlimited"}
         </div>
       </Card>
