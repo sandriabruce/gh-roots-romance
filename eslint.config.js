@@ -21,6 +21,24 @@ export default tseslint.config(
       ...reactHooks.configs.recommended.rules,
       "react-refresh/only-export-components": ["warn", { allowConstantExport: true }],
       "@typescript-eslint/no-unused-vars": "off",
+      "no-restricted-syntax": [
+        "warn",
+        {
+          selector: "CallExpression[callee.property.name='from'][arguments.0.value='profiles']",
+          message: "When fetching OTHER members (discover/matches/chat), use supabase.from('profiles_public') so emails stay hidden. Only the current user's own profile, onboarding update, and admin moderation may use 'profiles'.",
+        },
+      ],
+    },
+  },
+  {
+    // Allowed places that legitimately use the base 'profiles' table.
+    files: [
+      "src/hooks/useProfile.ts",
+      "src/pages/Onboarding.tsx",
+      "src/pages/app/Admin.tsx",
+    ],
+    rules: {
+      "no-restricted-syntax": "off",
     },
   },
 );
