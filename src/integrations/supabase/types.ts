@@ -115,6 +115,36 @@ export type Database = {
           },
         ]
       }
+      payment_events: {
+        Row: {
+          created_at: string
+          event_id: string
+          event_type: string | null
+          id: string
+          payload: Json | null
+          provider: string
+          reference: string | null
+        }
+        Insert: {
+          created_at?: string
+          event_id: string
+          event_type?: string | null
+          id?: string
+          payload?: Json | null
+          provider?: string
+          reference?: string | null
+        }
+        Update: {
+          created_at?: string
+          event_id?: string
+          event_type?: string | null
+          id?: string
+          payload?: Json | null
+          provider?: string
+          reference?: string | null
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           age: number | null
