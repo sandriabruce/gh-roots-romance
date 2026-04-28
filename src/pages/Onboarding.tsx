@@ -36,7 +36,12 @@ export default function Onboarding() {
   async function uploadPhoto(file: File) {
     if (!user) return;
     const check = await imageHasFace(file);
-    if (!check.ok) { toast.error(check.reason!); return; }
+    if (!check.ok) {
+      toast.error(`"${file.name}" was rejected: ${check.reason}`, {
+        description: check.tip,
+      });
+      return;
+    }
     const path = `${user.id}/${Date.now()}-${file.name.replace(/[^a-zA-Z0-9.]/g, "_")}`;
     const { error } = await supabase.storage.from("profile-photos").upload(path, file, { upsert: false });
     if (error) { toast.error(error.message); return; }
