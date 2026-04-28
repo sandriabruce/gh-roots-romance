@@ -5,6 +5,9 @@ import { Heart, X } from "lucide-react";
 import { useState } from "react";
 import { useProfile } from "@/hooks/useProfile";
 import { CoupleCard, SAMPLE_COUPLES } from "@/components/brand/CoupleCard";
+import { useEntitlements } from "@/hooks/useEntitlements";
+import { TrialBadge } from "@/components/plan/TrialBadge";
+import { PlanLockOverlay } from "@/components/plan/PlanLockOverlay";
 
 const SAMPLE_PEOPLE = [
   { name: "Akua", age: 48, location: "Accra", bio: "Faith, family, and fresh kelewele on Sunday." },
@@ -15,13 +18,40 @@ const SAMPLE_PEOPLE = [
 
 export default function Discover() {
   const { data: profile } = useProfile();
+  const { limits, plan, trial } = useEntitlements();
   const [i, setI] = useState(0);
+  const [likes, setLikes] = useState(0);
   const mode = profile?.mode ?? "romance";
   const person = SAMPLE_PEOPLE[i % SAMPLE_PEOPLE.length];
   const accent = mode === "spark" ? "bg-gradient-spark" : "bg-gradient-romance";
+  const limit = limits.weeklyMatchLimit;
+  const limitReached = limit !== null && likes >= limit;
+
+  const handleLike = () => {
+    if (limitReached) return;
+    setLikes((n) => n + 1);
+    setI((x) => x + 1);
+  };
+
   return (
     <div className="space-y-4">
       <SafetyBanner message="Tip: Real connections take time. Never send money to anyone you meet here." />
+      <TrialBadge />
+      {limit !== null && (
+        <p className="text-xs text-muted-foreground">
+          {plan === "explorer" || plan === "verified"
+            ? `${Math.max(0, limit - likes)} of ${limit} weekly matches remaining on the ${plan} plan.`
+            : null}
+        </p>
+      )}
+      {limitReached ? (
+        <PlanLockOverlay
+          title="Weekly match limit reached"
+          message={`The ${plan === "verified" ? "Verified" : "Explorer"} plan includes ${limit} matches per week. Upgrade to Premium for unlimited matches.`}
+          cta="Upgrade to Premium"
+        />
+      ) : (
+      <>
       <Card className={`relative aspect-[3/4] overflow-hidden rounded-3xl ${accent} text-white shadow-warm`}>
         <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/70 to-transparent p-5">
           <h2 className="font-display text-3xl font-bold">{person.name}, {person.age}</h2>
@@ -31,8 +61,10 @@ export default function Discover() {
       </Card>
       <div className="flex justify-center gap-6">
         <Button onClick={() => setI((x) => x + 1)} size="lg" variant="outline" className="h-16 w-16 rounded-full border-2 border-ghana-red"><X className="h-7 w-7 text-ghana-red" /></Button>
-        <Button onClick={() => setI((x) => x + 1)} size="lg" className="h-16 w-16 rounded-full bg-ghana-gold text-ghana-brown hover:bg-ghana-gold/90"><Heart className="h-7 w-7 fill-white" /></Button>
+        <Button onClick={handleLike} size="lg" className="h-16 w-16 rounded-full bg-ghana-gold text-ghana-brown hover:bg-ghana-gold/90"><Heart className="h-7 w-7 fill-white" /></Button>
       </div>
+      </>
+      )}
       <section>
         <h3 className="font-display text-xl font-bold text-ghana-brown">Real love stories</h3>
         <div className="mt-3 flex gap-3 overflow-x-auto pb-2">
