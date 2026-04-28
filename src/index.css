@@ -158,4 +158,24 @@ All colors MUST be HSL.
     padding: 0.35rem 0.9rem;
     color: hsl(var(--ghana-gold));
   }
+
+  /* Embossed 3D effect for the GH SUƆMƆ wordmark */
+  .wordmark-emboss {
+    background: linear-gradient(
+      180deg,
+      hsl(48 95% 70%) 0%,
+      hsl(42 90% 55%) 45%,
+      hsl(36 80% 38%) 100%
+    );
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+    color: transparent;
+    text-shadow:
+      0 1px 0 hsl(48 95% 80% / 0.6),
+      0 -1px 0 hsl(22 60% 10% / 0.6),
+      0 2px 2px hsl(22 60% 6% / 0.55),
+      0 6px 14px hsl(22 60% 4% / 0.45);
+    filter: drop-shadow(0 2px 1px hsl(22 60% 6% / 0.5));
+  }
 }
