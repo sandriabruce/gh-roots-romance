@@ -15,6 +15,7 @@ import Matches from "./pages/app/Matches";
 import Chat from "./pages/app/Chat";
 import Verify from "./pages/app/Verify";
 import Profile from "./pages/app/Profile";
+import EditProfile from "./pages/app/EditProfile";
 import Safety from "./pages/app/Safety";
 import Admin from "./pages/app/Admin";
 import NotFound from "./pages/NotFound.tsx";
@@ -41,6 +42,7 @@ const App = () => (
               <Route path="chat/:id" element={<Chat />} />
               <Route path="verify" element={<Verify />} />
               <Route path="profile" element={<Profile />} />
+              <Route path="profile/edit" element={<EditProfile />} />
               <Route path="safety" element={<Safety />} />
               <Route path="admin" element={<ProtectedRoute adminOnly><Admin /></ProtectedRoute>} />
             </Route>

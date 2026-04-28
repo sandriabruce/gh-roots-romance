@@ -6,6 +6,7 @@ import { useProfile } from "@/hooks/useProfile";
 import { useEntitlements } from "@/hooks/useEntitlements";
 import { TrialBadge } from "@/components/plan/TrialBadge";
 import { SafeText } from "@/components/ui/SafeText";
+import { Link } from "react-router-dom";
 
 export default function Profile() {
   const { signOut, user } = useAuth();
@@ -36,7 +37,12 @@ export default function Profile() {
           Chat: {limits.canChat ? "unlocked" : "locked"} · Matches/week: {limits.weeklyMatchLimit ?? "unlimited"}
         </div>
       </Card>
-      <Button variant="outline" className="border-ghana-red text-ghana-red" onClick={signOut}>Sign out</Button>
+      <div className="flex flex-wrap gap-2">
+        <Button asChild className="rounded-full bg-ghana-gold text-ghana-brown hover:bg-ghana-gold/90">
+          <Link to="/app/profile/edit">Edit profile</Link>
+        </Button>
+        <Button variant="outline" className="border-ghana-red text-ghana-red" onClick={signOut}>Sign out</Button>
+      </div>
     </div>
   );
 }
