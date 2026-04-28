@@ -17,7 +17,6 @@ export default function Profile() {
       <TrialBadge />
       <Card className="rounded-2xl p-4">
         <div className="font-display text-lg font-bold text-ghana-brown">{profile?.first_name ?? "—"}</div>
-        <div className="text-sm text-muted-foreground">{profile?.email}</div>
         <div className="mt-2 text-xs uppercase tracking-wider text-ghana-green">Mode: {profile?.mode ?? "romance"}</div>
         <div className="mt-1 text-xs uppercase tracking-wider text-ghana-green">
           Plan: {planLabel}
