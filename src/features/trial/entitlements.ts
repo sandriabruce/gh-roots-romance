@@ -19,7 +19,7 @@ export interface PlanLimits {
 
 export const PLAN_LIMITS: Record<Plan, PlanLimits> = {
   explorer: { canChat: false, weeklyMatchLimit: 2, verifiedBadge: false, concierge: false, priorityProfile: false },
-  verified: { canChat: false, weeklyMatchLimit: 2, verifiedBadge: true, concierge: false, priorityProfile: false },
+  verified: { canChat: false, weeklyMatchLimit: 5, verifiedBadge: true, concierge: false, priorityProfile: false },
   premium:  { canChat: true,  weeklyMatchLimit: null, verifiedBadge: true, concierge: false, priorityProfile: false },
   diamond:  { canChat: true,  weeklyMatchLimit: null, verifiedBadge: true, concierge: true,  priorityProfile: true  },
 };
