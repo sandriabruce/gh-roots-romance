@@ -588,6 +588,63 @@ export default function EditProfile() {
                 : "You'll move to the Romance pool. Spark-only prompts and interests will be removed."}
             </AlertDialogDescription>
           </AlertDialogHeader>
+          {pendingMode && (() => {
+            const droppedInterests = interests.filter((i) => !isInterestAllowed(i, pendingMode));
+            const droppedPrompts = prompts.filter((p) => !isPromptAllowed(p.q, pendingMode));
+            const remainingInterests = interests.length - droppedInterests.length;
+            const willBeBelowMin = remainingInterests < 3;
+            const nothingDropped = droppedInterests.length === 0 && droppedPrompts.length === 0;
+            return (
+              <div className="space-y-3 text-sm">
+                {nothingDropped ? (
+                  <p className="rounded-lg border bg-muted/50 p-3 text-muted-foreground">
+                    None of your current prompts or interests will be removed.
+                  </p>
+                ) : (
+                  <div className="rounded-lg border border-destructive/60 bg-destructive/10 p-3 space-y-2">
+                    <p className="font-semibold text-destructive">
+                      The following will be removed because they aren't allowed in {modeLabel(pendingMode)} mode:
+                    </p>
+                    {droppedInterests.length > 0 && (
+                      <div>
+                        <p className="text-xs uppercase tracking-wider text-muted-foreground">
+                          Interests ({droppedInterests.length})
+                        </p>
+                        <div className="mt-1 flex flex-wrap gap-1.5">
+                          {droppedInterests.map((i) => (
+                            <span
+                              key={i}
+                              className="rounded-full border border-destructive/60 bg-background px-2 py-0.5 text-xs text-destructive line-through"
+                            >
+                              {i}
+                            </span>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                    {droppedPrompts.length > 0 && (
+                      <div>
+                        <p className="text-xs uppercase tracking-wider text-muted-foreground">
+                          Prompts ({droppedPrompts.length})
+                        </p>
+                        <ul className="mt-1 space-y-1 text-xs text-destructive">
+                          {droppedPrompts.map((p, idx) => (
+                            <li key={idx} className="line-through">"{p.q}"</li>
+                          ))}
+                        </ul>
+                      </div>
+                    )}
+                  </div>
+                )}
+                {willBeBelowMin && (
+                  <p className="rounded-lg border border-amber-500/60 bg-amber-500/10 p-2 text-xs text-amber-700 dark:text-amber-300">
+                    Heads up: you'll have {remainingInterests} interest{remainingInterests === 1 ? "" : "s"} left.
+                    You'll need to pick at least 3 before saving.
+                  </p>
+                )}
+              </div>
+            );
+          })()}
           {pendingMode === "spark" && (
             <label className="flex items-start gap-2 rounded-xl border bg-muted p-3 text-sm">
               <Checkbox
