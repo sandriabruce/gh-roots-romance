@@ -20,7 +20,11 @@ export default function Verify() {
 
   return (
     <div className="space-y-4">
-      <SafetyBanner message="GH SUƆMƆ never asks for payment outside this app. Pay only via Paystack MoMo or card." />
+      <SafetyBanner
+        variant="warn"
+        className="text-ghana-red [&_p]:text-ghana-red"
+        message="GH SUƆMƆ never asks for payment outside this app. Pay only via Paystack MoMo or card."
+      />
       <h1 className="heading-gold font-display text-2xl font-bold">Plans & verification</h1>
       <TrialBadge />
       <div className="grid gap-3">
