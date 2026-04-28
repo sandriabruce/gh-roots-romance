@@ -29,7 +29,7 @@ export default function Landing() {
         </div>
       </section>
       <section className="mx-auto max-w-5xl px-4 pb-16">
-        <h2 className="font-display text-2xl font-bold text-ghana-brown">Real love stories</h2>
+        <h2 className="font-display text-2xl font-bold text-ghana-gold">Real love stories</h2>
         <div className="mt-4 flex gap-3 overflow-x-auto pb-2">
           {SAMPLE_COUPLES.map((c) => <CoupleCard key={c.id} couple={c} />)}
         </div>
