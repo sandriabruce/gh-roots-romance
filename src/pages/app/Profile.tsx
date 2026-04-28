@@ -16,9 +16,9 @@ export default function Profile() {
       <h1 className="heading-gold font-display text-2xl font-bold">Your profile</h1>
       <TrialBadge />
       <Card className="rounded-2xl p-4">
-        <div className="font-display text-lg font-bold text-ghana-brown">{profile?.first_name ?? "—"}</div>
-        <div className="mt-2 text-xs uppercase tracking-wider text-ghana-green">Mode: {profile?.mode ?? "romance"}</div>
-        <div className="mt-1 text-xs uppercase tracking-wider text-ghana-green">
+        <div className="font-display text-lg font-bold text-romance-foreground">{profile?.first_name ?? "—"}</div>
+        <div className="mt-2 text-xs uppercase tracking-wider text-[#edf8f2]">Mode: {profile?.mode ?? "romance"}</div>
+        <div className="mt-1 text-xs uppercase tracking-wider text-[#f1f9f5]">
           Plan: {planLabel}
           {trial.active && (plan === "explorer" || plan === "verified") && (
             <span className="ml-2 normal-case tracking-normal text-ghana-brown/70">
@@ -26,7 +26,7 @@ export default function Profile() {
             </span>
           )}
         </div>
-        <div className="mt-1 text-xs uppercase tracking-wider text-ghana-green">
+        <div className="mt-1 text-xs uppercase tracking-wider text-[#edf8f2]">
           Chat: {limits.canChat ? "unlocked" : "locked"} · Matches/week: {limits.weeklyMatchLimit ?? "unlimited"}
         </div>
       </Card>
