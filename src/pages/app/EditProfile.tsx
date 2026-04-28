@@ -7,12 +7,29 @@ import { Label } from "@/components/ui/label";
 import { useAuth } from "@/hooks/useAuth";
 import { useProfile } from "@/hooks/useProfile";
 import { supabase } from "@/integrations/supabase/client";
-import { INTERESTS, PROMPTS } from "@/lib/brand";
+import {
+  type AppMode,
+  promptsForMode,
+  interestsForMode,
+  isPromptAllowed,
+  isInterestAllowed,
+} from "@/lib/brand";
 import { imageHasFace, type FaceCheckCode } from "@/features/face/detectFace";
 import { toast } from "sonner";
 import { useQueryClient } from "@tanstack/react-query";
-import { ArrowLeft, Upload, X, AlertTriangle, Loader2 } from "lucide-react";
+import { ArrowLeft, Upload, X, AlertTriangle, Loader2, Heart, Sparkles, Lock } from "lucide-react";
 import { cn } from "@/lib/utils";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import { Checkbox } from "@/components/ui/checkbox";
 
 type PromptItem = { q: string; a: string };
 
@@ -35,6 +52,9 @@ export default function EditProfile() {
   const [photos, setPhotos] = useState<string[]>([]);
   const [interests, setInterests] = useState<string[]>([]);
   const [prompts, setPrompts] = useState<PromptItem[]>([]);
+  const [mode, setMode] = useState<AppMode>("romance");
+  const [pendingMode, setPendingMode] = useState<AppMode | null>(null);
+  const [sparkConsent, setSparkConsent] = useState(false);
   const [saving, setSaving] = useState(false);
   const [rejected, setRejected] = useState<RejectedPhoto[]>([]);
   const [uploadingNames, setUploadingNames] = useState<string[]>([]);
@@ -45,8 +65,18 @@ export default function EditProfile() {
     setPhotos(Array.isArray(profile.photos) ? (profile.photos as string[]) : []);
     setInterests(Array.isArray(profile.interests) ? (profile.interests as string[]) : []);
     const p = Array.isArray(profile.prompts) ? (profile.prompts as PromptItem[]) : [];
-    setPrompts(p.length ? p : [{ q: PROMPTS[0], a: "" }]);
+    const m: AppMode = (profile.mode === "spark" ? "spark" : "romance");
+    setMode(m);
+    setPrompts(p.length ? p : [{ q: promptsForMode(m)[0], a: "" }]);
   }, [profile]);
+
+  const allowedPrompts = promptsForMode(mode);
+  const allowedInterests = interestsForMode(mode);
+  const blockedInterests = interests.filter((i) => !isInterestAllowed(i, mode));
+  const blockedPromptIdxs = prompts
+    .map((p, idx) => ({ p, idx }))
+    .filter(({ p }) => !isPromptAllowed(p.q, mode))
+    .map(({ idx }) => idx);
 
   async function uploadPhotos(files: File[]) {
     if (!user || files.length === 0) return;
@@ -141,6 +171,10 @@ export default function EditProfile() {
   }
 
   function toggleInterest(i: string) {
+    if (!isInterestAllowed(i, mode)) {
+      toast.error(`"${i}" isn't available in ${modeLabel(mode)} mode.`);
+      return;
+    }
     setInterests((arr) =>
       arr.includes(i) ? arr.filter((x) => x !== i) : arr.length < 8 ? [...arr, i] : arr
     );
@@ -148,10 +182,16 @@ export default function EditProfile() {
 
   function addPrompt() {
     if (prompts.length >= 3) return;
-    setPrompts((p) => [...p, { q: PROMPTS[0], a: "" }]);
+    const first = allowedPrompts[0];
+    if (!first) return;
+    setPrompts((p) => [...p, { q: first, a: "" }]);
   }
 
   function updatePrompt(idx: number, patch: Partial<PromptItem>) {
+    if (patch.q && !isPromptAllowed(patch.q, mode)) {
+      toast.error(`That prompt isn't available in ${modeLabel(mode)} mode.`);
+      return;
+    }
     setPrompts((p) => p.map((it, i) => (i === idx ? { ...it, ...patch } : it)));
   }
 
@@ -161,9 +201,29 @@ export default function EditProfile() {
 
   async function save() {
     if (!user) return;
-    if (firstName.trim().length < 2) { toast.error("First name must be at least 2 characters."); return; }
-    if (interests.length < 3) { toast.error("Pick at least 3 interests."); return; }
+    if (firstName.trim().length < 2) {
+      toast.error("First name must be at least 2 characters.");
+      return;
+    }
+    if (blockedInterests.length > 0) {
+      toast.error(
+        `Remove interests not allowed in ${modeLabel(mode)} mode: ${blockedInterests.join(", ")}`
+      );
+      return;
+    }
+    if (blockedPromptIdxs.length > 0) {
+      toast.error(
+        `One or more prompts aren't allowed in ${modeLabel(mode)} mode. Change them before saving.`
+      );
+      return;
+    }
+    const validInterests = interests.filter((i) => isInterestAllowed(i, mode));
+    if (validInterests.length < 3) {
+      toast.error("Pick at least 3 interests.");
+      return;
+    }
     const cleanPrompts = prompts
+      .filter((p) => isPromptAllowed(p.q, mode))
       .map((p) => ({ q: p.q, a: p.a.trim() }))
       .filter((p) => p.a.length > 0);
     setSaving(true);
@@ -171,16 +231,54 @@ export default function EditProfile() {
       .from("profiles")
       .update({
         first_name: firstName.trim(),
+        mode,
         photos,
-        interests,
+        interests: validInterests,
         prompts: cleanPrompts,
       })
       .eq("id", user.id);
     setSaving(false);
-    if (error) { toast.error(error.message); return; }
+    if (error) {
+      toast.error(error.message);
+      return;
+    }
     await queryClient.invalidateQueries({ queryKey: ["profile", user.id] });
-    toast.success("Profile updated.");
+    toast.success(`Profile updated. You're in the ${modeLabel(mode)} pool.`);
     navigate("/app/profile");
+  }
+
+  function requestModeChange(next: AppMode) {
+    if (next === mode) return;
+    setSparkConsent(false);
+    setPendingMode(next);
+  }
+
+  function confirmModeChange() {
+    if (!pendingMode) return;
+    if (pendingMode === "spark" && !sparkConsent) return;
+    const next = pendingMode;
+    // Strip incompatible items.
+    const droppedInterests = interests.filter((i) => !isInterestAllowed(i, next));
+    const droppedPrompts = prompts.filter((p) => !isPromptAllowed(p.q, next));
+    setInterests((arr) => arr.filter((i) => isInterestAllowed(i, next)));
+    setPrompts((arr) => {
+      const filtered = arr.filter((p) => isPromptAllowed(p.q, next));
+      if (filtered.length === 0) {
+        const first = promptsForMode(next)[0];
+        return first ? [{ q: first, a: "" }] : [];
+      }
+      return filtered;
+    });
+    setMode(next);
+    setPendingMode(null);
+    const removedCount = droppedInterests.length + droppedPrompts.length;
+    toast.success(
+      removedCount > 0
+        ? `Switched to ${modeLabel(next)}. Removed ${droppedInterests.length} interest${
+            droppedInterests.length === 1 ? "" : "s"
+          } and ${droppedPrompts.length} prompt${droppedPrompts.length === 1 ? "" : "s"} not allowed in this mode.`
+        : `Switched to ${modeLabel(next)} mode.`
+    );
   }
 
   if (isLoading) {
@@ -195,6 +293,47 @@ export default function EditProfile() {
         </Button>
         <h1 className="heading-gold font-display text-2xl font-bold">Edit profile</h1>
       </div>
+
+      <Card className="rounded-2xl p-4 space-y-3">
+        <div className="flex items-center justify-between gap-2">
+          <h2 className="font-display text-lg font-bold text-ghana-gold">Member pool</h2>
+          <span className="text-xs uppercase tracking-wider text-muted-foreground">
+            Currently: {modeLabel(mode)}
+          </span>
+        </div>
+        <p className="text-xs text-muted-foreground">
+          Your mode controls which members you see and who can match you. Some prompts and interests are reserved for one pool.
+        </p>
+        <div className="grid grid-cols-2 gap-2">
+          {(
+            [
+              { id: "romance" as const, title: "Romance", desc: "Serious connections.", icon: Heart, ring: "ring-ghana-gold", color: "text-ghana-gold" },
+              { id: "spark" as const, title: "Spark (18+)", desc: "Casual adult.", icon: Sparkles, ring: "ring-ghana-red", color: "text-ghana-red" },
+            ]
+          ).map((opt) => (
+            <button
+              key={opt.id}
+              type="button"
+              onClick={() => requestModeChange(opt.id)}
+              className={cn(
+                "rounded-2xl border-2 p-3 text-left transition",
+                mode === opt.id
+                  ? `border-transparent ring-2 ${opt.ring} bg-card`
+                  : "border-border bg-background hover:bg-muted/50"
+              )}
+              aria-pressed={mode === opt.id}
+            >
+              <div className="flex items-center gap-2">
+                <opt.icon className={cn("h-5 w-5", opt.color)} />
+                <div>
+                  <p className="text-sm font-semibold">{opt.title}</p>
+                  <p className="text-xs text-muted-foreground">{opt.desc}</p>
+                </div>
+              </div>
+            </button>
+          ))}
+        </div>
+      </Card>
 
       <Card className="rounded-2xl p-4 space-y-3">
         <h2 className="font-display text-lg font-bold text-ghana-gold">Name</h2>
@@ -320,11 +459,27 @@ export default function EditProfile() {
             <Button variant="outline" size="sm" className="rounded-full" onClick={addPrompt}>Add prompt</Button>
           )}
         </div>
+        <p className="text-xs text-muted-foreground">
+          Showing prompts for <span className="font-medium">{modeLabel(mode)}</span> mode.
+        </p>
         <div className="space-y-3">
           {prompts.map((p, idx) => (
-            <div key={idx} className="rounded-xl border p-3 space-y-2">
+            <div
+              key={idx}
+              className={cn(
+                "rounded-xl border p-3 space-y-2",
+                blockedPromptIdxs.includes(idx) && "border-destructive/60 bg-destructive/5"
+              )}
+            >
               <div className="flex items-center justify-between gap-2">
-                <Label className="text-xs">Question</Label>
+                <Label className="text-xs flex items-center gap-1">
+                  Question
+                  {blockedPromptIdxs.includes(idx) && (
+                    <span className="inline-flex items-center gap-1 rounded-full bg-destructive/15 px-2 py-0.5 text-[10px] font-medium text-destructive">
+                      <Lock className="h-3 w-3" /> Not allowed in {modeLabel(mode)}
+                    </span>
+                  )}
+                </Label>
                 {prompts.length > 1 && (
                   <button
                     type="button"
@@ -341,7 +496,12 @@ export default function EditProfile() {
                 value={p.q}
                 onChange={(e) => updatePrompt(idx, { q: e.target.value })}
               >
-                {PROMPTS.map((q) => <option key={q} value={q}>{q}</option>)}
+                {!isPromptAllowed(p.q, mode) && (
+                  <option value={p.q} disabled>
+                    {p.q} (not allowed)
+                  </option>
+                )}
+                {allowedPrompts.map((q) => <option key={q} value={q}>{q}</option>)}
               </select>
               <textarea
                 className="min-h-24 w-full rounded-md border bg-background px-3 py-2 text-sm"
@@ -360,8 +520,24 @@ export default function EditProfile() {
           <h2 className="font-display text-lg font-bold text-ghana-gold">Interests</h2>
           <span className="text-xs text-muted-foreground">{interests.length}/8 (min 3)</span>
         </div>
+        <p className="text-xs text-muted-foreground">
+          Showing interests for <span className="font-medium">{modeLabel(mode)}</span> mode.
+        </p>
+        {blockedInterests.length > 0 && (
+          <div
+            role="alert"
+            className="rounded-xl border border-destructive/60 bg-destructive/10 p-3 text-xs text-destructive"
+          >
+            <p className="font-semibold flex items-center gap-1">
+              <Lock className="h-3 w-3" /> Remove before saving:
+            </p>
+            <p className="mt-1">
+              {blockedInterests.join(", ")} — not available in {modeLabel(mode)} mode.
+            </p>
+          </div>
+        )}
         <div className="flex flex-wrap gap-2">
-          {INTERESTS.map((i) => (
+          {allowedInterests.map((i) => (
             <button
               key={i}
               type="button"
@@ -374,6 +550,17 @@ export default function EditProfile() {
               {i}
             </button>
           ))}
+          {blockedInterests.map((i) => (
+            <button
+              key={`blocked-${i}`}
+              type="button"
+              onClick={() => setInterests((arr) => arr.filter((x) => x !== i))}
+              className="rounded-full border border-destructive/60 bg-destructive/10 px-3 py-1.5 text-sm text-destructive line-through"
+              title={`Click to remove (not allowed in ${modeLabel(mode)} mode)`}
+            >
+              {i} ✕
+            </button>
+          ))}
         </div>
       </Card>
 
@@ -382,11 +569,54 @@ export default function EditProfile() {
         <Button
           className="rounded-full bg-ghana-gold text-ghana-brown hover:bg-ghana-gold/90"
           onClick={save}
-          disabled={saving}
+          disabled={saving || blockedInterests.length > 0 || blockedPromptIdxs.length > 0}
         >
           {saving ? "Saving…" : "Save changes"}
         </Button>
       </div>
+
+      <AlertDialog open={pendingMode !== null} onOpenChange={(open) => { if (!open) setPendingMode(null); }}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>
+              Switch to {pendingMode ? modeLabel(pendingMode) : ""} mode?
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              {pendingMode === "spark"
+                ? "Spark is an adult (18+) pool focused on casual connections. Some Romance prompts and interests will be removed because they aren't allowed here."
+                : "You'll move to the Romance pool. Spark-only prompts and interests will be removed."}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          {pendingMode === "spark" && (
+            <label className="flex items-start gap-2 rounded-xl border bg-muted p-3 text-sm">
+              <Checkbox
+                checked={sparkConsent}
+                onCheckedChange={(v) => setSparkConsent(v === true)}
+              />
+              <span>I confirm I am 18 years or older and consent to seeing adult-oriented content.</span>
+            </label>
+          )}
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={(e) => {
+                if (pendingMode === "spark" && !sparkConsent) {
+                  e.preventDefault();
+                  toast.error("Please confirm you are 18+ to switch to Spark.");
+                  return;
+                }
+                confirmModeChange();
+              }}
+            >
+              Confirm switch
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
+}
+
+function modeLabel(m: AppMode) {
+  return m === "spark" ? "Spark" : "Romance";
 }
