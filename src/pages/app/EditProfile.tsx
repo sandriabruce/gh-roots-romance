@@ -243,6 +243,7 @@ export default function EditProfile() {
       return;
     }
     await queryClient.invalidateQueries({ queryKey: ["profile", user.id] });
+    await queryClient.refetchQueries({ queryKey: ["profile", user.id] });
     toast.success(`Profile updated. You're in the ${modeLabel(mode)} pool.`);
     navigate("/app/profile");
   }
