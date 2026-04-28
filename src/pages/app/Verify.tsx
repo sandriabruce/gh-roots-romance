@@ -1,15 +1,19 @@
+import { useState } from "react";
 import { SafetyBanner } from "@/components/safety/SafetyBanner";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { PaystackMomoFlow } from "@/components/paystack/PaystackMomoFlow";
 
 const PLANS = [
-  { name: "Explorer", price: "Free", note: "Browse only · 2 matches/week" },
-  { name: "Verified", price: "GH₵80/mo", note: "Verification badge" },
-  { name: "Premium", price: "GH₵180/mo", note: "Unlimited matches + chat" },
-  { name: "Diamond", price: "GH₵350/mo", note: "Personal matchmaker call" },
+  { name: "Explorer", price: "Free", note: "Browse only · 2 matches/week", payable: false },
+  { name: "Verified", price: "GH₵80/mo", note: "Verification badge", payable: true },
+  { name: "Premium", price: "GH₵180/mo", note: "Unlimited matches + chat", payable: true },
+  { name: "Diamond", price: "GH₵350/mo", note: "Personal matchmaker call", payable: true },
 ];
 
 export default function Verify() {
+  const [selected, setSelected] = useState<{ name: string; price: string } | null>(null);
+
   return (
     <div className="space-y-4">
       <SafetyBanner message="GH SUƆMƆ never asks for payment outside this app. Pay only via Paystack MoMo or card." />
@@ -23,11 +27,24 @@ export default function Verify() {
             </div>
             <div className="text-right">
               <div className="font-display text-base font-bold text-ghana-green">{p.price}</div>
-              <Button size="sm" className="mt-1 bg-ghana-gold text-ghana-brown hover:bg-ghana-gold/90">Choose</Button>
+              <Button
+                size="sm"
+                className="mt-1 bg-ghana-gold text-ghana-brown hover:bg-ghana-gold/90"
+                onClick={() => p.payable && setSelected({ name: p.name, price: p.price })}
+              >
+                {p.payable ? "Choose" : "Current"}
+              </Button>
             </div>
           </Card>
         ))}
       </div>
+
+      <PaystackMomoFlow
+        open={!!selected}
+        onOpenChange={(o) => !o && setSelected(null)}
+        planName={selected?.name ?? ""}
+        priceLabel={selected?.price ?? ""}
+      />
     </div>
   );
 }
