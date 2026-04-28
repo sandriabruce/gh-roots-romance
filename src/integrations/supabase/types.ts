@@ -321,7 +321,81 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      profiles_public: {
+        Row: {
+          age: number | null
+          banned: boolean | null
+          bio: string | null
+          created_at: string | null
+          ethnicity: string | null
+          first_name: string | null
+          flagged: boolean | null
+          gender: string | null
+          id: string | null
+          interested_in: string | null
+          interests: Json | null
+          location: string | null
+          mode: Database["public"]["Enums"]["app_mode"] | null
+          onboarded: boolean | null
+          photos: Json | null
+          plan: Database["public"]["Enums"]["plan_tier"] | null
+          privacy_strict: boolean | null
+          prompts: Json | null
+          religion: string | null
+          updated_at: string | null
+          values_text: string | null
+          verified: boolean | null
+        }
+        Insert: {
+          age?: number | null
+          banned?: boolean | null
+          bio?: string | null
+          created_at?: string | null
+          ethnicity?: string | null
+          first_name?: string | null
+          flagged?: boolean | null
+          gender?: string | null
+          id?: string | null
+          interested_in?: string | null
+          interests?: Json | null
+          location?: string | null
+          mode?: Database["public"]["Enums"]["app_mode"] | null
+          onboarded?: boolean | null
+          photos?: Json | null
+          plan?: Database["public"]["Enums"]["plan_tier"] | null
+          privacy_strict?: boolean | null
+          prompts?: Json | null
+          religion?: string | null
+          updated_at?: string | null
+          values_text?: string | null
+          verified?: boolean | null
+        }
+        Update: {
+          age?: number | null
+          banned?: boolean | null
+          bio?: string | null
+          created_at?: string | null
+          ethnicity?: string | null
+          first_name?: string | null
+          flagged?: boolean | null
+          gender?: string | null
+          id?: string | null
+          interested_in?: string | null
+          interests?: Json | null
+          location?: string | null
+          mode?: Database["public"]["Enums"]["app_mode"] | null
+          onboarded?: boolean | null
+          photos?: Json | null
+          plan?: Database["public"]["Enums"]["plan_tier"] | null
+          privacy_strict?: boolean | null
+          prompts?: Json | null
+          religion?: string | null
+          updated_at?: string | null
+          values_text?: string | null
+          verified?: boolean | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
       has_role: {
