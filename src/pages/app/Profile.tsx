@@ -8,18 +8,22 @@ import { TrialBadge } from "@/components/plan/TrialBadge";
 import { SafeText } from "@/components/ui/SafeText";
 
 export default function Profile() {
-  const { signOut } = useAuth();
+  const { signOut, user } = useAuth();
   const { data: profile } = useProfile();
   const { plan, planLabel, trial, limits } = useEntitlements();
+  const displayName = profile?.first_name?.trim() || user?.user_metadata?.first_name || user?.email?.split("@")[0] || "Your profile";
+  const email = profile?.email || user?.email;
+
   return (
     <div className="space-y-4">
       <SafetyBanner message="Privacy tip: Don't share your full address, workplace, or financial details on your profile." />
       <h1 className="heading-gold font-display text-2xl font-bold">Your profile</h1>
       <TrialBadge />
       <Card className="rounded-2xl p-4">
-        <SafeText as="div" className="font-display text-lg font-bold text-ghana-brown" fallbackClassName="text-card-foreground">
-          {profile?.first_name ?? "—"}
+        <SafeText as="div" className="font-display text-lg font-bold text-card-foreground" fallbackClassName="text-foreground">
+          {displayName}
         </SafeText>
+        {email && <div className="mt-1 text-sm text-muted-foreground">{email}</div>}
         <div className="mt-2 text-xs uppercase tracking-wider text-[#edf8f2]">Mode: {profile?.mode ?? "romance"}</div>
         <div className="mt-1 text-xs uppercase tracking-wider text-[#f1f9f5]">
           Plan: {planLabel}
