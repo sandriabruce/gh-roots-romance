@@ -6,6 +6,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { AuthProvider } from "@/hooks/useAuth";
 import { AppShell } from "@/components/layout/AppShell";
 import { ProtectedRoute } from "@/components/layout/ProtectedRoute";
+import { AdinkraOverlay } from "@/components/brand/AdinkraOverlay";
 import Landing from "./pages/Landing";
 import AuthPage from "./pages/Auth";
 import Onboarding from "./pages/Onboarding";
@@ -25,6 +26,7 @@ const App = () => (
     <TooltipProvider>
       <Toaster />
       <Sonner />
+      <AdinkraOverlay />
       <BrowserRouter>
         <AuthProvider>
           <Routes>

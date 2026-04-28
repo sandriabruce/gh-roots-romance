@@ -136,20 +136,6 @@ All colors MUST be HSL.
     font-feature-settings: "ss01", "cv11";
   }
 
-  /* Transparent Adinkra + Ga Samai watermark — fixed overlay across every page.
-     Sits above page backgrounds but below content; never blocks interaction. */
-  body::after {
-    content: "";
-    position: fixed;
-    inset: 0;
-    pointer-events: none;
-    z-index: 9999;
-    opacity: 0.14;
-    background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='280' height='280' viewBox='0 0 280 280'><g fill='none' stroke='%23e8b84a' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'><circle cx='50' cy='50' r='6'/><circle cx='50' cy='50' r='12'/><circle cx='50' cy='50' r='18'/><path d='M180 34 q14 6 14 22 q0 18 -18 22 q-14 3 -14 -10 q0 -10 10 -12 q8 -2 8 6'/><circle cx='180' cy='50' r='2.4' fill='%23e8b84a' stroke='none'/><path d='M80 170 q-20 -4 -20 -22 q0 -20 22 -20 q22 0 22 22 q0 10 -10 14 M82 170 l10 -6 M82 170 l-2 -12'/><path d='M210 160 q-14 -10 -14 -24 q0 -14 14 -14 q14 0 14 14 q0 14 -14 24 z'/><path d='M240 160 q14 -10 14 -24 q0 -14 -14 -14 q-14 0 -14 14 q0 14 14 24 z'/><path d='M140 240 l0 -28 M140 240 l0 28 M112 240 l28 0 M168 240 l-28 0 M124 224 l32 32 M156 224 l-32 32'/><path d='M20 120 l10 -10 l10 10 l-10 10 z'/><path d='M250 210 l10 -10 l10 10 l-10 10 z'/><path d='M130 100 l8 -8 l8 8 l-8 8 z'/><circle cx='30' cy='240' r='2' fill='%23e8b84a' stroke='none'/><circle cx='42' cy='250' r='2' fill='%23e8b84a' stroke='none'/><circle cx='38' cy='232' r='2' fill='%23e8b84a' stroke='none'/><circle cx='260' cy='90' r='2' fill='%23e8b84a' stroke='none'/><circle cx='248' cy='80' r='2' fill='%23e8b84a' stroke='none'/></g></svg>");
-    background-repeat: repeat;
-    background-size: 280px 280px;
-  }
-
   h1, h2, h3, h4, h5 {
     @apply font-display;
   }
