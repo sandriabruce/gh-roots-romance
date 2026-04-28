@@ -27,7 +27,7 @@ export function TrialBadge({ className = "" }: { className?: string }) {
   return (
     <Link
       to="/app/verify"
-      className={`flex items-center justify-between gap-2 rounded-2xl border-2 border-ghana-red/40 bg-ghana-red/10 px-3 py-2 text-xs ${className}`}
+      className={`flex items-center justify-between gap-2 rounded-2xl border-2 border-ghana-red/40 bg-ghana-red/10 px-3 py-2 text-xs text-ghana-red ${className}`}
     >
       <span className="font-medium text-ghana-brown">Your free trial has ended.</span>
       <span className="font-display font-bold text-ghana-red">Upgrade →</span>
