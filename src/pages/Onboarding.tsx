@@ -138,7 +138,7 @@ export default function Onboarding() {
                   <Label>I am</Label>
                   <div className="flex gap-2 mt-1">
                     {["Woman", "Man", "Non-binary"].map((g) => (
-                      <button key={g} onClick={() => setData((d: any) => ({ ...d, gender: g }))} className={cn("rounded-full border px-4 py-1.5 text-sm", data.gender === g ? "bg-ghana-green text-primary-foreground" : "")}>{g}</button>
+                      <button key={g} onClick={() => setData((d: any) => ({ ...d, gender: g }))} className={cn("rounded-full border px-4 py-1.5 text-sm", data.gender === g ? "bg-ghana-gold text-ghana-brown border-ghana-gold" : "")}>{g}</button>
                     ))}
                   </div>
                 </div>
@@ -146,7 +146,7 @@ export default function Onboarding() {
                   <Label>Interested in</Label>
                   <div className="flex gap-2 mt-1">
                     {["Women", "Men", "Everyone"].map((g) => (
-                      <button key={g} onClick={() => setData((d: any) => ({ ...d, interested_in: g }))} className={cn("rounded-full border px-4 py-1.5 text-sm", data.interested_in === g ? "bg-ghana-green text-primary-foreground" : "")}>{g}</button>
+                      <button key={g} onClick={() => setData((d: any) => ({ ...d, interested_in: g }))} className={cn("rounded-full border px-4 py-1.5 text-sm", data.interested_in === g ? "bg-ghana-gold text-ghana-brown border-ghana-gold" : "")}>{g}</button>
                     ))}
                   </div>
                 </div>
@@ -256,9 +256,9 @@ export default function Onboarding() {
           <div className="mt-6 flex justify-between gap-2">
             <Button variant="outline" onClick={back} disabled={step === 1} className="rounded-full">Back</Button>
             {step < totalSteps ? (
-              <Button onClick={next} disabled={!canAdvance} className="rounded-full bg-ghana-green hover:bg-ghana-green/90">Continue</Button>
+              <Button onClick={next} disabled={!canAdvance} className="rounded-full bg-ghana-gold text-ghana-brown hover:bg-ghana-gold/90">Continue</Button>
             ) : (
-              <Button onClick={finish} className="rounded-full bg-ghana-green hover:bg-ghana-green/90">Finish</Button>
+              <Button onClick={finish} className="rounded-full bg-ghana-gold text-ghana-brown hover:bg-ghana-gold/90">Finish</Button>
             )}
           </div>
         </Card>

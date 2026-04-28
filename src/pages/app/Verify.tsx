@@ -23,7 +23,7 @@ export default function Verify() {
             </div>
             <div className="text-right">
               <div className="font-display text-base font-bold text-ghana-green">{p.price}</div>
-              <Button size="sm" className="mt-1 bg-ghana-green hover:bg-ghana-green/90">Choose</Button>
+              <Button size="sm" className="mt-1 bg-ghana-gold text-ghana-brown hover:bg-ghana-gold/90">Choose</Button>
             </div>
           </Card>
         ))}

@@ -16,7 +16,7 @@ export default function Landing() {
           Ghanaian dating for the 40+ generation. At home and across the diaspora — built for real love, with real safety.
         </p>
         <div className="mt-8 flex justify-center gap-3">
-          <Link to="/auth"><Button size="lg" className="bg-ghana-green hover:bg-ghana-green/90">Start free 7-day trial</Button></Link>
+          <Link to="/auth"><Button size="lg" className="bg-ghana-gold text-ghana-brown hover:bg-ghana-gold/90">Start free 7-day trial</Button></Link>
           <Link to="/app/safety"><Button size="lg" variant="outline" className="border-ghana-red text-ghana-red">Safety first</Button></Link>
         </div>
         <div className="mt-10 grid grid-cols-4 gap-3 text-center">

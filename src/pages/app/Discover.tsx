@@ -31,7 +31,7 @@ export default function Discover() {
       </Card>
       <div className="flex justify-center gap-6">
         <Button onClick={() => setI((x) => x + 1)} size="lg" variant="outline" className="h-16 w-16 rounded-full border-2 border-ghana-red"><X className="h-7 w-7 text-ghana-red" /></Button>
-        <Button onClick={() => setI((x) => x + 1)} size="lg" className="h-16 w-16 rounded-full bg-ghana-green hover:bg-ghana-green/90"><Heart className="h-7 w-7 fill-white" /></Button>
+        <Button onClick={() => setI((x) => x + 1)} size="lg" className="h-16 w-16 rounded-full bg-ghana-gold text-ghana-brown hover:bg-ghana-gold/90"><Heart className="h-7 w-7 fill-white" /></Button>
       </div>
       <section>
         <h3 className="font-display text-xl font-bold text-ghana-brown">Real love stories</h3>
