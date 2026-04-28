@@ -159,6 +159,18 @@ All colors MUST be HSL.
     color: hsl(var(--ghana-gold));
   }
 
+  /* Give brown-colored headers a thin gold outline around each letter */
+  h1.text-ghana-brown,
+  h2.text-ghana-brown,
+  h3.text-ghana-brown,
+  h4.text-ghana-brown,
+  h5.text-ghana-brown,
+  h6.text-ghana-brown {
+    -webkit-text-stroke: 1px hsl(var(--ghana-gold));
+    text-stroke: 1px hsl(var(--ghana-gold));
+    paint-order: stroke fill;
+  }
+
   /* Embossed 3D effect for the GH SUƆMƆ wordmark */
   .wordmark-emboss {
     background: linear-gradient(
