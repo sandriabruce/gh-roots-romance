@@ -13,7 +13,7 @@ export default function Verify() {
   return (
     <div className="space-y-4">
       <SafetyBanner message="GH SUƆMƆ never asks for payment outside this app. Pay only via Paystack MoMo or card." />
-      <h1 className="font-display text-2xl font-bold text-ghana-brown">Plans & verification</h1>
+      <h1 className="heading-gold font-display text-2xl font-bold">Plans & verification</h1>
       <div className="grid gap-3">
         {PLANS.map((p) => (
           <Card key={p.name} className="flex items-center justify-between rounded-2xl border-2 border-ghana-gold/40 p-4">

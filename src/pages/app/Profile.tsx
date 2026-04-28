@@ -10,7 +10,7 @@ export default function Profile() {
   return (
     <div className="space-y-4">
       <SafetyBanner message="Privacy tip: Don't share your full address, workplace, or financial details on your profile." />
-      <h1 className="font-display text-2xl font-bold text-ghana-brown">Your profile</h1>
+      <h1 className="heading-gold font-display text-2xl font-bold">Your profile</h1>
       <Card className="rounded-2xl p-4">
         <div className="font-display text-lg font-bold text-ghana-brown">{profile?.first_name ?? "—"}</div>
         <div className="text-sm text-muted-foreground">{profile?.email}</div>

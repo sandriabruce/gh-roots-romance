@@ -94,7 +94,7 @@ export default function Onboarding() {
         <Card className="mt-4 rounded-3xl p-6 shadow-card">
           {step === 1 && (
             <>
-              <h2 className="font-display text-2xl font-bold">Choose your path</h2>
+              <h2 className="heading-gold font-display text-2xl font-bold">Choose your path</h2>
               <p className="text-sm text-muted-foreground mt-1">You can switch later in your profile.</p>
               <div className="mt-4 grid gap-3">
                 {[
@@ -127,7 +127,7 @@ export default function Onboarding() {
 
           {step === 2 && (
             <>
-              <h2 className="font-display text-2xl font-bold">About you</h2>
+              <h2 className="heading-gold font-display text-2xl font-bold">About you</h2>
               <div className="mt-4 grid gap-3">
                 <div>
                   <Label>Age</Label>
@@ -156,7 +156,7 @@ export default function Onboarding() {
 
           {step === 3 && (
             <>
-              <h2 className="font-display text-2xl font-bold">Your name & home</h2>
+              <h2 className="heading-gold font-display text-2xl font-bold">Your name & home</h2>
               <div className="mt-4 grid gap-3">
                 <div><Label>First name</Label><Input value={data.first_name} onChange={(e) => setData((d: any) => ({ ...d, first_name: e.target.value }))} /></div>
                 <div>
@@ -172,7 +172,7 @@ export default function Onboarding() {
 
           {step === 4 && (
             <>
-              <h2 className="font-display text-2xl font-bold">Your photos</h2>
+              <h2 className="heading-gold font-display text-2xl font-bold">Your photos</h2>
               <p className="text-sm text-muted-foreground mt-1">Add up to 6 photos. We use face detection to keep things real.</p>
               <div className="mt-4 grid grid-cols-3 gap-3">
                 {Array.from({ length: 6 }).map((_, i) => (
@@ -194,7 +194,7 @@ export default function Onboarding() {
 
           {step === 5 && (
             <>
-              <h2 className="font-display text-2xl font-bold">A prompt about you</h2>
+              <h2 className="heading-gold font-display text-2xl font-bold">A prompt about you</h2>
               <select className="mt-3 w-full rounded-md border bg-background px-3 py-2" value={data.promptIndex} onChange={(e) => setData((d: any) => ({ ...d, promptIndex: parseInt(e.target.value) }))}>
                 {PROMPTS.map((p, i) => <option key={i} value={i}>{p}</option>)}
               </select>
@@ -204,7 +204,7 @@ export default function Onboarding() {
 
           {step === 6 && (
             <>
-              <h2 className="font-display text-2xl font-bold">{data.mode === "romance" ? "Faith & values" : "Discretion preferences"}</h2>
+              <h2 className="heading-gold font-display text-2xl font-bold">{data.mode === "romance" ? "Faith & values" : "Discretion preferences"}</h2>
               <div className="mt-4 grid gap-3">
                 {data.mode === "romance" && (
                   <>
@@ -234,7 +234,7 @@ export default function Onboarding() {
 
           {step === 7 && (
             <>
-              <h2 className="font-display text-2xl font-bold">Pick at least 3 interests</h2>
+              <h2 className="heading-gold font-display text-2xl font-bold">Pick at least 3 interests</h2>
               <div className="mt-4 flex flex-wrap gap-2">
                 {INTERESTS.map((i) => (
                   <button key={i} onClick={() => toggleInterest(i)} className={cn("rounded-full border px-3 py-1.5 text-sm", data.interests.includes(i) ? "bg-ghana-gold text-ghana-brown border-ghana-gold" : "")}>{i}</button>
@@ -245,7 +245,7 @@ export default function Onboarding() {
 
           {step === 8 && (
             <>
-              <h2 className="font-display text-2xl font-bold">Notifications & privacy</h2>
+              <h2 className="heading-gold font-display text-2xl font-bold">Notifications & privacy</h2>
               <div className="mt-4 space-y-3">
                 <label className="flex items-start gap-2"><Checkbox checked={data.notifications_enabled} onCheckedChange={(v) => setData((d: any) => ({ ...d, notifications_enabled: v === true }))} /><span className="text-sm">Email me about new matches and messages.</span></label>
                 <label className="flex items-start gap-2"><Checkbox checked={data.privacy_strict} onCheckedChange={(v) => setData((d: any) => ({ ...d, privacy_strict: v === true }))} /><span className="text-sm">Strict privacy — only show me to verified members.</span></label>
