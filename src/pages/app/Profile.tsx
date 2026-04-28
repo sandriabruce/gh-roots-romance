@@ -20,7 +20,7 @@ export default function Profile() {
       <h1 className="heading-gold font-display text-2xl font-bold">Your profile</h1>
       <TrialBadge />
       <Card className="rounded-2xl p-4">
-        <SafeText as="div" className="font-display text-lg font-bold text-card-foreground" fallbackClassName="text-foreground">
+        <SafeText as="div" className="heading-gold font-display text-2xl font-bold" fallbackClassName="text-foreground">
           {displayName}
         </SafeText>
         <div className="mt-2 text-xs uppercase tracking-wider text-[#edf8f2]">Mode: {profile?.mode ?? "romance"}</div>
