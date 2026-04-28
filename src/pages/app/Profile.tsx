@@ -23,7 +23,6 @@ export default function Profile() {
         <SafeText as="div" className="font-display text-lg font-bold text-card-foreground" fallbackClassName="text-foreground">
           {displayName}
         </SafeText>
-        {email && <div className="mt-1 text-sm text-muted-foreground">{email}</div>}
         <div className="mt-2 text-xs uppercase tracking-wider text-[#edf8f2]">Mode: {profile?.mode ?? "romance"}</div>
         <div className="mt-1 text-xs uppercase tracking-wider text-[#f1f9f5]">
           Plan: {planLabel}
