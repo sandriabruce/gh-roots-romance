@@ -90,7 +90,7 @@ export default function AuthPage() {
           </form>
           <button
             onClick={() => setMode(mode === "signup" ? "signin" : "signup")}
-            className="mt-4 w-full text-sm text-ghana-green underline-offset-4 hover:underline"
+            className="mt-4 w-full text-sm underline-offset-4 hover:underline text-ghana-gold"
           >
             {mode === "signup" ? "Already a member? Sign in" : "New here? Create an account"}
           </button>
