@@ -16,21 +16,76 @@ export const RELIGIONS = ["Christian", "Muslim", "Traditional", "Spiritual but n
 
 export const ETHNICITIES = ["Akan", "Ewe", "Ga-Adangbe", "Mole-Dagbani", "Guan", "Other Ghanaian", "Mixed heritage"];
 
-export const INTERESTS = [
-  "Faith", "Family", "Cooking", "Travel", "Music",
-  "Reading", "Gardening", "Football", "Movies", "Politics",
-  "Business", "Volunteering", "Dance", "Hiking", "Art",
-  "Photography", "Fitness", "Fashion",
+export type AppMode = "romance" | "spark";
+
+export interface ModeTagged {
+  label: string;
+  modes: AppMode[];
+}
+
+/**
+ * Interests catalog. `modes` declares which member pools an interest is valid for.
+ * Items tagged only with "spark" are blocked in Romance mode and vice versa.
+ */
+export const INTERESTS_CATALOG: ModeTagged[] = [
+  { label: "Faith",         modes: ["romance"] },
+  { label: "Family",        modes: ["romance"] },
+  { label: "Cooking",       modes: ["romance", "spark"] },
+  { label: "Travel",        modes: ["romance", "spark"] },
+  { label: "Music",         modes: ["romance", "spark"] },
+  { label: "Reading",       modes: ["romance", "spark"] },
+  { label: "Gardening",     modes: ["romance"] },
+  { label: "Football",      modes: ["romance", "spark"] },
+  { label: "Movies",        modes: ["romance", "spark"] },
+  { label: "Politics",      modes: ["romance"] },
+  { label: "Business",      modes: ["romance", "spark"] },
+  { label: "Volunteering",  modes: ["romance"] },
+  { label: "Dance",         modes: ["romance", "spark"] },
+  { label: "Hiking",        modes: ["romance", "spark"] },
+  { label: "Art",           modes: ["romance", "spark"] },
+  { label: "Photography",   modes: ["romance", "spark"] },
+  { label: "Fitness",       modes: ["romance", "spark"] },
+  { label: "Fashion",       modes: ["romance", "spark"] },
+  // Spark-only
+  { label: "Nightlife",     modes: ["spark"] },
+  { label: "Discretion",    modes: ["spark"] },
+  { label: "Weekend escapes", modes: ["spark"] },
 ];
 
-export const PROMPTS = [
-  "What I'm looking for in a partner is…",
-  "A perfect Sunday for me looks like…",
-  "The proudest moment of my life so far…",
-  "My family means to me…",
-  "Something not many people know about me…",
-  "If I could move anywhere in Ghana, I would choose…",
+export const PROMPTS_CATALOG: ModeTagged[] = [
+  { label: "What I'm looking for in a partner is…",        modes: ["romance"] },
+  { label: "A perfect Sunday for me looks like…",          modes: ["romance", "spark"] },
+  { label: "The proudest moment of my life so far…",       modes: ["romance"] },
+  { label: "My family means to me…",                       modes: ["romance"] },
+  { label: "Something not many people know about me…",     modes: ["romance", "spark"] },
+  { label: "If I could move anywhere in Ghana, I would choose…", modes: ["romance", "spark"] },
+  // Spark-only
+  { label: "What I want from a casual connection is…",     modes: ["spark"] },
+  { label: "My idea of a memorable night out is…",         modes: ["spark"] },
 ];
+
+export function interestsForMode(mode: AppMode): string[] {
+  return INTERESTS_CATALOG.filter((i) => i.modes.includes(mode)).map((i) => i.label);
+}
+
+export function promptsForMode(mode: AppMode): string[] {
+  return PROMPTS_CATALOG.filter((p) => p.modes.includes(mode)).map((p) => p.label);
+}
+
+export function isInterestAllowed(label: string, mode: AppMode): boolean {
+  const item = INTERESTS_CATALOG.find((i) => i.label === label);
+  return !item || item.modes.includes(mode);
+}
+
+export function isPromptAllowed(label: string, mode: AppMode): boolean {
+  const item = PROMPTS_CATALOG.find((p) => p.label === label);
+  return !item || item.modes.includes(mode);
+}
+
+// Back-compat: existing Onboarding code imports these flat arrays.
+// Default to the Romance catalog (the original list).
+export const INTERESTS = interestsForMode("romance");
+export const PROMPTS = promptsForMode("romance");
 
 export const REPORT_REASONS = [
   "Romance scam / asking for money",
