@@ -24,7 +24,7 @@ import {
 } from "@/components/ui/select";
 import { Card } from "@/components/ui/card";
 import { toast } from "@/hooks/use-toast";
-import { ShieldCheck, Smartphone, CheckCircle2 } from "lucide-react";
+import { ShieldCheck, Smartphone, CheckCircle2, AlertTriangle, RotateCw } from "lucide-react";
 import { PAYSTACK_PUBLIC_KEY, isPaystackTestMode } from "@/lib/paystack";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -51,6 +51,9 @@ export function PaystackMomoFlow({ open, onOpenChange, planName, priceLabel, pla
   const [otp, setOtp] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [reference, setReference] = useState<string | null>(null);
+  const [errorMsg, setErrorMsg] = useState<string | null>(null);
+  const [errorKind, setErrorKind] = useState<"activation" | "network" | "generic" | null>(null);
+  const [attempts, setAttempts] = useState(0);
 
   const reset = () => {
     setStep(1);
@@ -59,6 +62,9 @@ export function PaystackMomoFlow({ open, onOpenChange, planName, priceLabel, pla
     setOtp("");
     setSubmitting(false);
     setReference(null);
+    setErrorMsg(null);
+    setErrorKind(null);
+    setAttempts(0);
   };
 
   const handleClose = (next: boolean) => {
@@ -80,12 +86,37 @@ export function PaystackMomoFlow({ open, onOpenChange, planName, priceLabel, pla
     setStep(2);
   };
 
+  const classifyError = (raw: string): { kind: "activation" | "network" | "generic"; message: string } => {
+    const m = raw.toLowerCase();
+    if (
+      m.includes("test mobile money") ||
+      m.includes("test mode") ||
+      m.includes("activate") ||
+      m.includes("not been activated") ||
+      m.includes("live mode") ||
+      m.includes("compliance")
+    ) {
+      return {
+        kind: "activation",
+        message:
+          "Mobile Money payments aren't fully switched on yet. This usually clears within a few minutes — please try again shortly.",
+      };
+    }
+    if (m.includes("network") || m.includes("fetch") || m.includes("timeout")) {
+      return { kind: "network", message: "Network hiccup. Check your connection and try again." };
+    }
+    return { kind: "generic", message: raw || "Something went wrong. Please try again." };
+  };
+
   const requestOtp = async () => {
+    setErrorMsg(null);
+    setErrorKind(null);
     if (!planId) {
       toast({ title: "Plan unavailable", description: "Please pick a paid plan." });
       return;
     }
     setSubmitting(true);
+    setAttempts((a) => a + 1);
     try {
       const { data, error } = await supabase.functions.invoke("paystack-initialize", {
         body: { plan: planId, phone, provider: network },
@@ -96,6 +127,7 @@ export function PaystackMomoFlow({ open, onOpenChange, planName, priceLabel, pla
       const status = data.status as string | undefined;
       if (status === "send_otp") {
         setStep(3);
+        setAttempts(0);
         toast({ title: "OTP sent", description: data.display_text || `Check ${phone} for a code from Paystack.` });
       } else if (status === "pay_offline") {
         toast({ title: "Approve on your phone", description: data.display_text || "Dial your MoMo menu to approve the charge." });
@@ -108,9 +140,13 @@ export function PaystackMomoFlow({ open, onOpenChange, planName, priceLabel, pla
         handleClose(false);
       }
     } catch (e) {
+      const raw = e instanceof Error ? e.message : "Try again.";
+      const { kind, message } = classifyError(raw);
+      setErrorKind(kind);
+      setErrorMsg(message);
       toast({
-        title: "Could not start payment",
-        description: e instanceof Error ? e.message : "Try again.",
+        title: kind === "activation" ? "Mobile Money temporarily unavailable" : "Could not start payment",
+        description: message,
       });
     } finally {
       setSubmitting(false);
@@ -118,6 +154,8 @@ export function PaystackMomoFlow({ open, onOpenChange, planName, priceLabel, pla
   };
 
   const confirmOtp = async () => {
+    setErrorMsg(null);
+    setErrorKind(null);
     if (otp.length !== 6) {
       toast({ title: "Enter the 6-digit code", description: "Check your SMS from Paystack." });
       return;
@@ -127,6 +165,7 @@ export function PaystackMomoFlow({ open, onOpenChange, planName, priceLabel, pla
       return;
     }
     setSubmitting(true);
+    setAttempts((a) => a + 1);
     try {
       const { data, error } = await supabase.functions.invoke("paystack-submit-otp", {
         body: { reference, otp },
@@ -139,10 +178,19 @@ export function PaystackMomoFlow({ open, onOpenChange, planName, priceLabel, pla
       });
       handleClose(false);
     } catch (e) {
+      const raw = e instanceof Error ? e.message : "Try again.";
+      const { kind, message } = classifyError(raw);
+      setErrorKind(kind);
+      setErrorMsg(
+        kind === "generic"
+          ? "That code didn't work. Double-check the SMS from Paystack and try again."
+          : message,
+      );
       toast({
-        title: "OTP rejected",
-        description: e instanceof Error ? e.message : "Try again.",
+        title: kind === "activation" ? "Mobile Money temporarily unavailable" : "OTP not accepted",
+        description: message,
       });
+      setOtp("");
     } finally {
       setSubmitting(false);
     }
@@ -220,6 +268,9 @@ export function PaystackMomoFlow({ open, onOpenChange, planName, priceLabel, pla
               <Row label="Phone" value={phone} />
               <Row label="Provider" value={isPaystackTestMode ? "Paystack (Test)" : "Paystack"} />
             </Card>
+            {errorMsg && (
+              <ErrorBanner kind={errorKind} message={errorMsg} attempts={attempts} />
+            )}
             <div className="flex items-start gap-2 rounded-lg bg-ghana-green/10 p-3 text-xs text-ghana-brown">
               <ShieldCheck className="mt-0.5 h-4 w-4 shrink-0 text-ghana-green" />
               <span>
@@ -233,8 +284,8 @@ export function PaystackMomoFlow({ open, onOpenChange, planName, priceLabel, pla
                 disabled={submitting}
                 className="w-full bg-ghana-gold text-ghana-brown hover:bg-ghana-gold/90"
               >
-                <Smartphone className="mr-2 h-4 w-4" />
-                {submitting ? "Sending OTP…" : "Send me the OTP"}
+                {errorMsg ? <RotateCw className="mr-2 h-4 w-4" /> : <Smartphone className="mr-2 h-4 w-4" />}
+                {submitting ? "Sending OTP…" : errorMsg ? "Try again" : "Send me the OTP"}
               </Button>
               <Button variant="ghost" onClick={() => setStep(1)} className="w-full">
                 Back
@@ -257,15 +308,31 @@ export function PaystackMomoFlow({ open, onOpenChange, planName, priceLabel, pla
                 </InputOTPGroup>
               </InputOTP>
             </div>
+            {errorMsg && (
+              <ErrorBanner kind={errorKind} message={errorMsg} attempts={attempts} />
+            )}
             <DialogFooter className="flex-col gap-2 sm:flex-col">
               <Button
                 onClick={confirmOtp}
                 disabled={submitting}
                 className="w-full bg-ghana-green text-white hover:bg-ghana-green/90"
               >
-                <CheckCircle2 className="mr-2 h-4 w-4" />
-                {submitting ? "Verifying…" : "Confirm payment"}
+                {errorMsg ? <RotateCw className="mr-2 h-4 w-4" /> : <CheckCircle2 className="mr-2 h-4 w-4" />}
+                {submitting ? "Verifying…" : errorMsg ? "Try again" : "Confirm payment"}
               </Button>
+              {errorKind === "activation" && (
+                <Button
+                  variant="outline"
+                  onClick={() => {
+                    setStep(2);
+                    setOtp("");
+                    setReference(null);
+                  }}
+                  className="w-full"
+                >
+                  Restart payment
+                </Button>
+              )}
               <Button variant="ghost" onClick={() => setStep(2)} className="w-full">
                 Back
               </Button>
@@ -287,6 +354,43 @@ function Row({ label, value }: { label: string; value: string }) {
     <div className="flex items-center justify-between text-sm">
       <span className="text-muted-foreground">{label}</span>
       <span className="font-medium text-ghana-brown">{value}</span>
+    </div>
+  );
+}
+
+function ErrorBanner({
+  kind,
+  message,
+  attempts,
+}: {
+  kind: "activation" | "network" | "generic" | null;
+  message: string;
+  attempts: number;
+}) {
+  const isActivation = kind === "activation";
+  return (
+    <div
+      role="alert"
+      className={`flex items-start gap-2 rounded-lg p-3 text-xs ${
+        isActivation
+          ? "bg-ghana-gold/15 text-ghana-brown"
+          : "bg-ghana-red/10 text-ghana-red"
+      }`}
+    >
+      <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
+      <div className="space-y-1">
+        <p className="font-medium">{message}</p>
+        {isActivation && (
+          <p className="opacity-80">
+            No charge was made. You can safely retry — your phone won't be billed twice.
+          </p>
+        )}
+        {attempts >= 3 && (
+          <p className="opacity-80">
+            Still failing after a few tries? Contact support and we'll sort it out.
+          </p>
+        )}
+      </div>
     </div>
   );
 }
