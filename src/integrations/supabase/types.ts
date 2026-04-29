@@ -159,6 +159,7 @@ export type Database = {
           id: string
           interested_in: string | null
           interests: Json | null
+          is_seed: boolean
           location: string | null
           mode: Database["public"]["Enums"]["app_mode"]
           notifications_enabled: boolean | null
@@ -186,6 +187,7 @@ export type Database = {
           id: string
           interested_in?: string | null
           interests?: Json | null
+          is_seed?: boolean
           location?: string | null
           mode?: Database["public"]["Enums"]["app_mode"]
           notifications_enabled?: boolean | null
@@ -213,6 +215,7 @@ export type Database = {
           id?: string
           interested_in?: string | null
           interests?: Json | null
+          is_seed?: boolean
           location?: string | null
           mode?: Database["public"]["Enums"]["app_mode"]
           notifications_enabled?: boolean | null
