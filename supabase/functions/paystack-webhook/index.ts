@@ -54,7 +54,7 @@ Deno.serve(async (req) => {
         reference: reference ?? null,
         payload: evt,
       },
-      { onConflict: "event_id" },
+      { onConflict: "provider,event_id" },
     );
 
     // Activate on success-like events.
