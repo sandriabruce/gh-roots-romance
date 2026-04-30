@@ -28,11 +28,15 @@ Deno.serve(async (req) => {
   const results: ReconResult[] = [];
   // Look back 7 days by default; allow override via body.
   let lookbackHours = 24 * 7;
+  let singleReference: string | null = null;
   try {
     if (req.method === "POST") {
       const body = await req.json().catch(() => ({}));
       if (typeof body?.lookbackHours === "number" && body.lookbackHours > 0) {
         lookbackHours = Math.min(body.lookbackHours, 24 * 30);
+      }
+      if (typeof body?.reference === "string" && body.reference.trim()) {
+        singleReference = body.reference.trim();
       }
     }
   } catch {/* ignore */}
@@ -43,6 +47,10 @@ Deno.serve(async (req) => {
   const refs = new Set<string>();
   const sourceMap = new Map<string, "subscription" | "event">();
 
+  if (singleReference) {
+    refs.add(singleReference);
+    sourceMap.set(singleReference, "subscription");
+  } else {
   // 1. Subscriptions that aren't active yet but have a Paystack reference.
   const { data: pendingSubs, error: subsErr } = await sb
     .from("subscriptions")
@@ -73,6 +81,7 @@ Deno.serve(async (req) => {
       refs.add(e.reference);
       sourceMap.set(e.reference, "event");
     }
+  }
   }
 
   // Verify each reference against Paystack and activate when successful.
