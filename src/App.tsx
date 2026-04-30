@@ -19,6 +19,7 @@ import EditProfile from "./pages/app/EditProfile";
 import Safety from "./pages/app/Safety";
 import Admin from "./pages/app/Admin";
 import PaymentsAdmin from "./pages/app/PaymentsAdmin";
+import PaymentEventsAdmin from "./pages/app/PaymentEventsAdmin";
 import ChatDiagnostics from "./pages/app/ChatDiagnostics";
 import NotFound from "./pages/NotFound.tsx";
 
@@ -48,6 +49,7 @@ const App = () => (
               <Route path="safety" element={<Safety />} />
               <Route path="admin" element={<ProtectedRoute adminOnly><Admin /></ProtectedRoute>} />
               <Route path="admin/payments" element={<ProtectedRoute adminOnly><PaymentsAdmin /></ProtectedRoute>} />
+              <Route path="admin/payment-events" element={<ProtectedRoute adminOnly><PaymentEventsAdmin /></ProtectedRoute>} />
               <Route path="admin/chat-diagnostics" element={<ProtectedRoute adminOnly><ChatDiagnostics /></ProtectedRoute>} />
             </Route>
             <Route path="*" element={<NotFound />} />
