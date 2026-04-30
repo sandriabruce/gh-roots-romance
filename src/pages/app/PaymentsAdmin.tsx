@@ -3,7 +3,7 @@ import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { RefreshCw, ShieldAlert, CheckCircle2, Clock, XCircle } from "lucide-react";
+import { RefreshCw, ShieldAlert, CheckCircle2, Clock, XCircle, Wand2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { Navigate } from "react-router-dom";
@@ -48,6 +48,7 @@ export default function PaymentsAdmin() {
   const [profiles, setProfiles] = useState<Record<string, Profile>>({});
   const [events, setEvents] = useState<PaymentEvent[]>([]);
   const [loading, setLoading] = useState(false);
+  const [reconciling, setReconciling] = useState(false);
   const [filter, setFilter] = useState("");
 
   async function load() {
@@ -75,6 +76,27 @@ export default function PaymentsAdmin() {
   }
 
   useEffect(() => { if (isAdmin) load(); }, [isAdmin]);
+
+  async function runReconcile() {
+    setReconciling(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("paystack-reconcile", {
+        body: { lookbackHours: 24 * 7 },
+      });
+      if (error) throw error;
+      const s = data?.summary;
+      toast.success(
+        `Reconciled: ${s?.activated ?? 0} activated · ${s?.scanned ?? 0} scanned${
+          s?.failed ? ` · ${s.failed} errors` : ""
+        }`,
+      );
+      await load();
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Reconciliation failed");
+    } finally {
+      setReconciling(false);
+    }
+  }
 
   if (authLoading) return <div className="text-muted-foreground">Loading…</div>;
   if (!isAdmin) return <Navigate to="/app/discover" replace />;
@@ -104,9 +126,15 @@ export default function PaymentsAdmin() {
     <div className="space-y-4">
       <div className="flex items-center justify-between gap-2">
         <h1 className="heading-gold font-display text-2xl font-bold">Payments verification</h1>
-        <Button onClick={load} disabled={loading} size="sm" variant="outline" className="rounded-full">
-          <RefreshCw className={`h-3 w-3 mr-1 ${loading ? "animate-spin" : ""}`} /> Refresh
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button onClick={runReconcile} disabled={reconciling} size="sm" className="rounded-full bg-ghana-green text-white hover:bg-ghana-green/90">
+            <Wand2 className={`h-3 w-3 mr-1 ${reconciling ? "animate-pulse" : ""}`} />
+            {reconciling ? "Reconciling…" : "Reconcile now"}
+          </Button>
+          <Button onClick={load} disabled={loading} size="sm" variant="outline" className="rounded-full">
+            <RefreshCw className={`h-3 w-3 mr-1 ${loading ? "animate-spin" : ""}`} /> Refresh
+          </Button>
+        </div>
       </div>
 
       <div className="flex items-start gap-2 rounded-2xl border border-ghana-gold/40 bg-ghana-gold/10 p-3 text-xs text-ghana-brown">
