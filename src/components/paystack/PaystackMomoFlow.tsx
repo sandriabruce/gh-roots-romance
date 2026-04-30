@@ -27,6 +27,7 @@ import { toast } from "@/hooks/use-toast";
 import { ShieldCheck, Smartphone, CheckCircle2, AlertTriangle, RotateCw } from "lucide-react";
 import { PAYSTACK_PUBLIC_KEY, isPaystackTestMode } from "@/lib/paystack";
 import { supabase } from "@/integrations/supabase/client";
+import { useQueryClient } from "@tanstack/react-query";
 
 const NETWORKS = [
   { id: "mtn", label: "MTN Mobile Money" },
@@ -45,7 +46,30 @@ interface Props {
 }
 
 export function PaystackMomoFlow({ open, onOpenChange, planName, priceLabel, planId }: Props) {
+  const queryClient = useQueryClient();
   const [step, setStep] = useState<Step>(1);
+  // Poll paystack-verify a few times to catch slow MoMo approvals (offline flow)
+  // and to defend against webhook delays. Activation is idempotent server-side.
+  const pollActivation = async (ref: string) => {
+    const delays = [3000, 5000, 8000, 12000, 20000];
+    for (const ms of delays) {
+      await new Promise((r) => setTimeout(r, ms));
+      try {
+        const { data } = await supabase.functions.invoke("paystack-verify", {
+          body: { reference: ref },
+        });
+        if (data?.activated) {
+          await queryClient.invalidateQueries({ queryKey: ["profile"] });
+          await queryClient.invalidateQueries({ queryKey: ["active-subscription"] });
+          toast({ title: "Plan activated", description: `Welcome to ${planName}.` });
+          return;
+        }
+      } catch (err) {
+        console.warn("verify poll failed", err);
+      }
+    }
+  };
+
   const [network, setNetwork] = useState<string>("");
   const [phone, setPhone] = useState("");
   const [otp, setOtp] = useState("");
@@ -131,12 +155,15 @@ export function PaystackMomoFlow({ open, onOpenChange, planName, priceLabel, pla
         toast({ title: "OTP sent", description: data.display_text || `Check ${phone} for a code from Paystack.` });
       } else if (status === "pay_offline") {
         toast({ title: "Approve on your phone", description: data.display_text || "Dial your MoMo menu to approve the charge." });
+        if (data.reference) void pollActivation(data.reference);
         handleClose(false);
       } else if (status === "success") {
         toast({ title: "Payment successful", description: "Your plan will activate shortly." });
+        if (data.reference) void pollActivation(data.reference);
         handleClose(false);
       } else {
         toast({ title: "Charge submitted", description: data.message || "Awaiting Paystack confirmation." });
+        if (data.reference) void pollActivation(data.reference);
         handleClose(false);
       }
     } catch (e) {
@@ -172,10 +199,17 @@ export function PaystackMomoFlow({ open, onOpenChange, planName, priceLabel, pla
       });
       if (error) throw error;
       if (data?.error) throw new Error(data.error);
-      toast({
-        title: "Payment submitted",
-        description: "We'll confirm your upgrade once Paystack verifies the charge.",
-      });
+      if (data?.activated) {
+        await queryClient.invalidateQueries({ queryKey: ["profile"] });
+        await queryClient.invalidateQueries({ queryKey: ["active-subscription"] });
+        toast({ title: "Plan activated", description: `Welcome to ${planName}.` });
+      } else {
+        toast({
+          title: "Payment submitted",
+          description: "We'll confirm your upgrade once Paystack verifies the charge.",
+        });
+        if (reference) void pollActivation(reference);
+      }
       handleClose(false);
     } catch (e) {
       const raw = e instanceof Error ? e.message : "Try again.";
