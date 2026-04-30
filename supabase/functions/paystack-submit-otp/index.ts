@@ -1,4 +1,5 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.4";
+import { activateFromPaystackData, verifyPaystackReference } from "../_shared/activate.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -45,10 +46,32 @@ Deno.serve(async (req) => {
       console.error("Submit OTP failed", psJson);
       return json({ error: psJson.message || "OTP rejected", details: psJson }, 400);
     }
+
+    const finalStatus = psJson.data?.status as string | undefined;
+    let activated = false;
+    // If Paystack reports success, verify + activate immediately so the user
+    // unlocks chat without waiting for the webhook.
+    if (finalStatus === "success") {
+      try {
+        const verified = await verifyPaystackReference(reference);
+        const result = await activateFromPaystackData({
+          reference,
+          status: verified.status,
+          amount: verified.amount ?? 0,
+          currency: verified.currency ?? "GHS",
+          metadata: verified.metadata ?? null,
+        });
+        activated = !!result.activated;
+      } catch (err) {
+        console.error("Activate after OTP failed (webhook will retry)", err);
+      }
+    }
+
     return json({
-      status: psJson.data?.status,
+      status: finalStatus,
       reference: psJson.data?.reference ?? reference,
       message: psJson.message,
+      activated,
     });
   } catch (e) {
     console.error(e);
