@@ -18,6 +18,7 @@ import Profile from "./pages/app/Profile";
 import EditProfile from "./pages/app/EditProfile";
 import Safety from "./pages/app/Safety";
 import Admin from "./pages/app/Admin";
+import PaymentsAdmin from "./pages/app/PaymentsAdmin";
 import NotFound from "./pages/NotFound.tsx";
 
 const queryClient = new QueryClient();
@@ -45,6 +46,7 @@ const App = () => (
               <Route path="profile/edit" element={<EditProfile />} />
               <Route path="safety" element={<Safety />} />
               <Route path="admin" element={<ProtectedRoute adminOnly><Admin /></ProtectedRoute>} />
+              <Route path="admin/payments" element={<ProtectedRoute adminOnly><PaymentsAdmin /></ProtectedRoute>} />
             </Route>
             <Route path="*" element={<NotFound />} />
           </Routes>
