@@ -7,6 +7,9 @@ export function useProfile() {
   return useQuery({
     queryKey: ["profile", user?.id],
     enabled: !!user,
+    staleTime: 30_000,
+    refetchOnWindowFocus: true,
+    refetchOnMount: true,
     queryFn: async () => {
       if (!user) return null;
       const { data, error } = await supabase.from("profiles").select("*").eq("id", user.id).maybeSingle();
