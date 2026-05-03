@@ -1,0 +1,19 @@
+
+UPDATE public.profiles SET photos = '["https://dudzxsnrybsgezodylwf.supabase.co/storage/v1/object/public/profile-photos/david.jpg"]'::jsonb WHERE id = '03414f9f-25d8-4399-ae0c-fb9067072fa4';
+UPDATE public.profiles SET photos = '["https://dudzxsnrybsgezodylwf.supabase.co/storage/v1/object/public/profile-photos/kwame.jpg"]'::jsonb WHERE id = '7548bfcc-9e7b-41b0-89df-a565a7e3665f';
+UPDATE public.profiles SET photos = '["https://dudzxsnrybsgezodylwf.supabase.co/storage/v1/object/public/profile-photos/kweku.jpg"]'::jsonb WHERE id = '962f0a86-fb30-4cbe-8378-4ec6e13b2f21';
+UPDATE public.profiles SET photos = '["https://dudzxsnrybsgezodylwf.supabase.co/storage/v1/object/public/profile-photos/nana-boateng.jpg"]'::jsonb WHERE id = 'b90c60ea-352d-4769-9d8a-e0b9593e31a6';
+UPDATE public.profiles SET photos = '["https://dudzxsnrybsgezodylwf.supabase.co/storage/v1/object/public/profile-photos/paul.jpg"]'::jsonb WHERE id = 'e7c0083a-fddc-4a49-938a-b64ed98b3949';
+UPDATE public.profiles SET photos = '["https://dudzxsnrybsgezodylwf.supabase.co/storage/v1/object/public/profile-photos/quesi.jpg"]'::jsonb WHERE id = '05e8be92-4dad-4078-8c2e-9ba806942795';
+UPDATE public.profiles SET photos = '["https://dudzxsnrybsgezodylwf.supabase.co/storage/v1/object/public/profile-photos/aku.jpg"]'::jsonb WHERE id = 'df23e5e0-78c1-48db-847b-75e6bc8d2085';
+UPDATE public.profiles SET photos = '["https://dudzxsnrybsgezodylwf.supabase.co/storage/v1/object/public/profile-photos/barbara.jpg"]'::jsonb WHERE id = '92672dc9-409f-4f99-85a7-f24b9e072dce';
+UPDATE public.profiles SET photos = '["https://dudzxsnrybsgezodylwf.supabase.co/storage/v1/object/public/profile-photos/lilly.jpg"]'::jsonb WHERE id = 'dc31eff8-b0e1-4ffa-882f-6a24e9c8b391';
+UPDATE public.profiles SET photos = '["https://dudzxsnrybsgezodylwf.supabase.co/storage/v1/object/public/profile-photos/liz.jpg","https://dudzxsnrybsgezodylwf.supabase.co/storage/v1/object/public/profile-photos/liz1.jpg"]'::jsonb WHERE id = '786561f4-ab71-418c-9907-a50b3831c7c1';
+UPDATE public.profiles SET photos = '["https://dudzxsnrybsgezodylwf.supabase.co/storage/v1/object/public/profile-photos/maame.jpg"]'::jsonb WHERE id = '6415d371-0c51-43f4-8d59-c83d6bc183f0';
+UPDATE public.profiles SET photos = '["https://dudzxsnrybsgezodylwf.supabase.co/storage/v1/object/public/profile-photos/maggie.jpg"]'::jsonb WHERE id = '88baa4ab-8871-436b-b1da-1b216816379c';
+UPDATE public.profiles SET photos = '["https://dudzxsnrybsgezodylwf.supabase.co/storage/v1/object/public/profile-photos/mira.jpg","https://dudzxsnrybsgezodylwf.supabase.co/storage/v1/object/public/profile-photos/mira1.jpg"]'::jsonb WHERE id = 'a557196e-5236-4cd6-be8e-ba3f53b60051';
+UPDATE public.profiles SET photos = '["https://dudzxsnrybsgezodylwf.supabase.co/storage/v1/object/public/profile-photos/missy.jpg"]'::jsonb WHERE id = '465541e8-1543-49ee-a919-b3c42bff5106';
+UPDATE public.profiles SET photos = '["https://dudzxsnrybsgezodylwf.supabase.co/storage/v1/object/public/profile-photos/obaayaa.jpg"]'::jsonb WHERE id = '6ece9c90-0463-4eb8-9395-4b2504ec8d5e';
+UPDATE public.profiles SET photos = '["https://dudzxsnrybsgezodylwf.supabase.co/storage/v1/object/public/profile-photos/sissy.jpg"]'::jsonb WHERE id = '3752aaae-5fe9-4f3e-b6e2-3d6dc943aa2e';
+UPDATE public.profiles SET photos = '["https://dudzxsnrybsgezodylwf.supabase.co/storage/v1/object/public/profile-photos/toyin.jpg"]'::jsonb WHERE id = 'e28ca37d-1eba-457a-8832-803bf66ecb73';
+UPDATE public.profiles SET photos = '["https://dudzxsnrybsgezodylwf.supabase.co/storage/v1/object/public/profile-photos/willa.jpg"]'::jsonb WHERE id = '9f2a7d93-a934-43f4-92bd-a94aeacede2b';
