@@ -21,6 +21,7 @@ import Admin from "./pages/app/Admin";
 import PaymentsAdmin from "./pages/app/PaymentsAdmin";
 import PaymentEventsAdmin from "./pages/app/PaymentEventsAdmin";
 import ChatDiagnostics from "./pages/app/ChatDiagnostics";
+import SeedPhotosAdmin from "./pages/app/SeedPhotosAdmin";
 import NotFound from "./pages/NotFound.tsx";
 
 const queryClient = new QueryClient();
@@ -51,6 +52,7 @@ const App = () => (
               <Route path="admin/payments" element={<ProtectedRoute adminOnly><PaymentsAdmin /></ProtectedRoute>} />
               <Route path="admin/payment-events" element={<ProtectedRoute adminOnly><PaymentEventsAdmin /></ProtectedRoute>} />
               <Route path="admin/chat-diagnostics" element={<ProtectedRoute adminOnly><ChatDiagnostics /></ProtectedRoute>} />
+              <Route path="admin/seed-photos" element={<ProtectedRoute adminOnly><SeedPhotosAdmin /></ProtectedRoute>} />
             </Route>
             <Route path="*" element={<NotFound />} />
           </Routes>
