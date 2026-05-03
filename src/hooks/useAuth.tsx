@@ -7,32 +7,44 @@ interface AuthCtx {
   session: Session | null;
   loading: boolean;
   isAdmin: boolean;
+  roleLoaded: boolean;
   signOut: () => Promise<void>;
 }
 
-const Ctx = createContext<AuthCtx>({ user: null, session: null, loading: true, isAdmin: false, signOut: async () => {} });
+const Ctx = createContext<AuthCtx>({ user: null, session: null, loading: true, isAdmin: false, roleLoaded: false, signOut: async () => {} });
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
   const [isAdmin, setIsAdmin] = useState(false);
+  const [roleLoaded, setRoleLoaded] = useState(false);
 
   useEffect(() => {
     const { data: sub } = supabase.auth.onAuthStateChange((_event, s) => {
       setSession(s);
       if (s?.user) {
+        setRoleLoaded(false);
         setTimeout(() => {
           supabase.from("user_roles").select("role").eq("user_id", s.user.id).then(({ data }) => {
             setIsAdmin(!!data?.some((r) => r.role === "admin"));
+            setRoleLoaded(true);
           });
         }, 0);
       } else {
         setIsAdmin(false);
+        setRoleLoaded(true);
       }
     });
     supabase.auth.getSession().then(({ data }) => {
       setSession(data.session);
       setLoading(false);
+      if (!data.session) setRoleLoaded(true);
+      else {
+        supabase.from("user_roles").select("role").eq("user_id", data.session.user.id).then(({ data: roles }) => {
+          setIsAdmin(!!roles?.some((r) => r.role === "admin"));
+          setRoleLoaded(true);
+        });
+      }
     });
     return () => sub.subscription.unsubscribe();
   }, []);
@@ -58,6 +70,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     session,
     loading,
     isAdmin,
+    roleLoaded,
     signOut: async () => { await supabase.auth.signOut(); },
   };
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;
