@@ -3,6 +3,10 @@ import { Compass, Heart, MessageCircle, ShieldCheck, User, ShieldAlert, Crown } 
 import { useAuth } from "@/hooks/useAuth";
 import { cn } from "@/lib/utils";
 import { Logo } from "@/components/brand/Logo";
+import { useEffect } from "react";
+import { useProfile } from "@/hooks/useProfile";
+import { computeTrial } from "@/features/trial/entitlements";
+import { toast } from "sonner";
 
 const tabs = [
   { to: "/app/discover", label: "Discover", icon: Compass },
@@ -15,7 +19,28 @@ const tabs = [
 
 export function AppShell() {
   const { isAdmin } = useAuth();
+  const { data: profile } = useProfile();
   const allTabs = isAdmin ? [...tabs, { to: "/app/admin", label: "Admin", icon: Crown }] : tabs;
+
+  // One-time toast confirming Premium activation + new trial end date.
+  useEffect(() => {
+    if (!profile?.id) return;
+    if (profile.plan !== "premium" && profile.plan !== "diamond") return;
+    const key = `premium-activated-notice:${profile.id}`;
+    if (localStorage.getItem(key)) return;
+    const trial = computeTrial(profile.trial_start);
+    const endsAt = trial.endsAt
+      ? trial.endsAt.toLocaleDateString(undefined, { month: "long", day: "numeric", year: "numeric" })
+      : null;
+    toast.success("Premium activated 🎉", {
+      description: endsAt
+        ? `Your trial now runs through ${endsAt}. Enjoy unlimited matches and chat.`
+        : "Enjoy unlimited matches, chat, and the verified badge.",
+      duration: 8000,
+    });
+    localStorage.setItem(key, new Date().toISOString());
+  }, [profile?.id, profile?.plan, profile?.trial_start]);
+
   return (
     <div className="flex min-h-screen flex-col bg-gradient-warm">
       <header className="sticky top-0 z-30 border-b bg-background/90 px-4 py-3 backdrop-blur">
