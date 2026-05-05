@@ -8,7 +8,7 @@ export default function Landing() {
     <div className="min-h-screen bg-gradient-warm">
       <header className="mx-auto flex max-w-5xl items-center justify-between px-4 py-4">
         <Logo size="sm" />
-        <Link to="/auth"><Button variant="ghost" className="text-ghana-brown">Sign in</Button></Link>
+        <Link to="/auth"><Button variant="ghost" className="text-ghana-brown text-slate-50">Sign in</Button></Link>
       </header>
       <section className="mx-auto max-w-3xl px-4 py-12 text-center">
         <Logo size="xl" showWordmark className="justify-center" />
