@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card } from "@/components/ui/card";
 import { Logo } from "@/components/brand/Logo";
-import { GHANA_CITIES, RELIGIONS, ETHNICITIES } from "@/lib/brand";
+import { GHANA_CITIES, RELIGIONS, ETHNICITIES, INTERESTS, PROMPTS } from "@/lib/brand";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
@@ -33,7 +33,7 @@ const RELATIONSHIP_TYPES = [
 type StepId =
   | "welcome" | "first_name" | "dob" | "gender" | "interested_in"
   | "country" | "city" | "ethnicity" | "religion" | "has_children"
-  | "relationship_type" | "bio" | "photo" | "review";
+  | "relationship_type" | "bio" | "photo" | "interests" | "prompt" | "review";
 
 interface FormState {
   first_name: string;
@@ -48,12 +48,16 @@ interface FormState {
   relationship_type: string;
   bio: string;
   photo: string; // signed URL
+  interests: string[];
+  prompt_q: string;
+  prompt_a: string;
 }
 
 const initialForm: FormState = {
   first_name: "", date_of_birth: "", gender: "", interested_in: "",
   country: "", city: "", ethnicity: "", religion: "", has_children: "",
   relationship_type: "", bio: "", photo: "",
+  interests: [], prompt_q: "", prompt_a: "",
 };
 
 function calcAge(dob: string): number | null {
@@ -78,7 +82,7 @@ export default function Onboarding() {
   const steps: StepId[] = useMemo(() => [
     "welcome", "first_name", "dob", "gender", "interested_in",
     "country", "city", "ethnicity", "religion", "has_children",
-    "relationship_type", "bio", "photo", "review",
+    "relationship_type", "bio", "photo", "interests", "prompt", "review",
   ], []);
   const step = steps[stepIndex];
   const total = steps.length - 1; // exclude welcome from progress denominator visually
@@ -104,6 +108,8 @@ export default function Onboarding() {
       case "relationship_type": return !!form.relationship_type;
       case "bio": return form.bio.trim().length >= 20;
       case "photo": return !!form.photo;
+      case "interests": return form.interests.length >= 3;
+      case "prompt": return !!form.prompt_q && form.prompt_a.trim().length >= 5;
       case "review": return true;
     }
   })();
@@ -148,6 +154,8 @@ export default function Onboarding() {
       bio: form.bio.trim(),
       values_text: form.bio.trim(),
       photos: [form.photo],
+      interests: form.interests,
+      prompts: [{ q: form.prompt_q, a: form.prompt_a.trim() }],
       onboarded: true,
     };
     const { error } = await supabase.from("profiles").update(payload).eq("id", user.id);
