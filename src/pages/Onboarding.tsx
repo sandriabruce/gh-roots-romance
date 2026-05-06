@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Progress } from "@/components/ui/progress";
 import { Button } from "@/components/ui/button";
@@ -78,12 +78,111 @@ export default function Onboarding() {
   const [stepIndex, setStepIndex] = useState(0);
   const [uploading, setUploading] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  const [hydrated, setHydrated] = useState(false);
 
   const steps: StepId[] = useMemo(() => [
     "welcome", "first_name", "dob", "gender", "interested_in",
     "country", "city", "ethnicity", "religion", "has_children",
     "relationship_type", "bio", "photo", "interests", "prompt", "review",
   ], []);
+
+  const storageKey = user ? `onboarding-progress:${user.id}` : null;
+
+  // Hydrate from localStorage + existing profile so users resume where they left off.
+  useEffect(() => {
+    if (!user || hydrated) return;
+    let cancelled = false;
+    (async () => {
+      let nextForm: FormState = initialForm;
+      let nextStep = 0;
+      // 1. Locally-saved in-progress draft (most recent)
+      if (storageKey) {
+        try {
+          const raw = localStorage.getItem(storageKey);
+          if (raw) {
+            const saved = JSON.parse(raw) as { form?: Partial<FormState>; stepIndex?: number };
+            if (saved.form) nextForm = { ...nextForm, ...saved.form };
+            if (typeof saved.stepIndex === "number") nextStep = saved.stepIndex;
+          }
+        } catch { /* ignore */ }
+      }
+      // 2. Merge in any persisted profile fields (server is source of truth for saved fields)
+      const { data } = await supabase
+        .from("profiles")
+        .select("first_name,date_of_birth,gender,interested_in,country,city,ethnicity,religion,has_children,relationship_type,bio,photos,interests,prompts")
+        .eq("id", user.id)
+        .maybeSingle();
+      if (data) {
+        const photos = Array.isArray(data.photos) ? (data.photos as string[]) : [];
+        const interests = Array.isArray(data.interests) ? (data.interests as string[]) : [];
+        const prompts = Array.isArray(data.prompts) ? (data.prompts as Array<{ q?: string; a?: string }>) : [];
+        nextForm = {
+          ...nextForm,
+          first_name: data.first_name || nextForm.first_name,
+          date_of_birth: data.date_of_birth || nextForm.date_of_birth,
+          gender: data.gender || nextForm.gender,
+          interested_in: data.interested_in || nextForm.interested_in,
+          country: data.country || nextForm.country,
+          city: data.city || nextForm.city,
+          ethnicity: data.ethnicity || nextForm.ethnicity,
+          religion: data.religion || nextForm.religion,
+          has_children: data.has_children || nextForm.has_children,
+          relationship_type: data.relationship_type || nextForm.relationship_type,
+          bio: data.bio || nextForm.bio,
+          photo: photos[0] || nextForm.photo,
+          interests: interests.length ? interests : nextForm.interests,
+          prompt_q: prompts[0]?.q || nextForm.prompt_q,
+          prompt_a: prompts[0]?.a || nextForm.prompt_a,
+        };
+      }
+      if (cancelled) return;
+      setForm(nextForm);
+      // Compute first incomplete step (skip "welcome" if any data exists)
+      const ordered: StepId[] = [
+        "welcome", "first_name", "dob", "gender", "interested_in",
+        "country", "city", "ethnicity", "religion", "has_children",
+        "relationship_type", "bio", "photo", "interests", "prompt", "review",
+      ];
+      const isComplete = (s: StepId): boolean => {
+        switch (s) {
+          case "welcome": return true;
+          case "first_name": return nextForm.first_name.trim().length >= 2;
+          case "dob": {
+            const a = calcAge(nextForm.date_of_birth);
+            return a !== null && a >= 40 && a <= 110;
+          }
+          case "gender": return !!nextForm.gender;
+          case "interested_in": return !!nextForm.interested_in;
+          case "country": return !!nextForm.country;
+          case "city": return nextForm.city.trim().length >= 2;
+          case "ethnicity": return !!nextForm.ethnicity;
+          case "religion": return !!nextForm.religion;
+          case "has_children": return !!nextForm.has_children;
+          case "relationship_type": return !!nextForm.relationship_type;
+          case "bio": return nextForm.bio.trim().length >= 20;
+          case "photo": return !!nextForm.photo;
+          case "interests": return nextForm.interests.length >= 3;
+          case "prompt": return !!nextForm.prompt_q && nextForm.prompt_a.trim().length >= 20;
+          case "review": return true;
+        }
+      };
+      const firstIncomplete = ordered.findIndex((s) => s !== "welcome" && !isComplete(s));
+      const computed = firstIncomplete === -1 ? ordered.length - 1 : firstIncomplete;
+      // Prefer the larger of saved stepIndex and computed (don't go backwards on resume)
+      setStepIndex(Math.max(nextStep, computed));
+      setHydrated(true);
+    })();
+    return () => { cancelled = true; };
+  }, [user, hydrated, storageKey]);
+
+  // Persist draft as the user progresses.
+  useEffect(() => {
+    if (!hydrated || !storageKey) return;
+    try {
+      localStorage.setItem(storageKey, JSON.stringify({ form, stepIndex }));
+    } catch { /* ignore */ }
+  }, [form, stepIndex, hydrated, storageKey]);
+
   const step = steps[stepIndex];
   const total = steps.length - 1; // exclude welcome from progress denominator visually
   const progress = Math.max(0, Math.min(100, (stepIndex / (steps.length - 1)) * 100));
@@ -191,6 +290,9 @@ export default function Onboarding() {
     const { error } = await supabase.from("profiles").update(payload).eq("id", user.id);
     setSubmitting(false);
     if (error) { toast.error(error.message); return; }
+    if (storageKey) {
+      try { localStorage.removeItem(storageKey); } catch { /* ignore */ }
+    }
     toast.success("Welcome to GH SUƆMƆ — your profile is live.");
     navigate("/app/discover");
   }
