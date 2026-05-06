@@ -46,6 +46,30 @@ Deno.serve(async (req) => {
         .maybeSingle();
       if (!claimed) continue;
 
+      // Guard: ensure no reply from this seed already exists after the trigger message
+      const { data: trigger } = await admin
+        .from("messages")
+        .select("created_at")
+        .eq("id", item.trigger_message_id)
+        .maybeSingle();
+
+      if (trigger?.created_at) {
+        const { data: existing } = await admin
+          .from("messages")
+          .select("id")
+          .eq("match_id", item.match_id)
+          .eq("sender_id", item.seed_user_id)
+          .gt("created_at", trigger.created_at)
+          .limit(1);
+        if (existing && existing.length > 0) {
+          await admin.from("seed_reply_queue")
+            .update({ status: "skipped", processed_at: new Date().toISOString() })
+            .eq("id", item.id);
+          results.push({ id: item.id, ok: true, error: "already replied" });
+          continue;
+        }
+      }
+
       const { data: seed } = await admin
         .from("profiles")
         .select("first_name, age, gender, location, city, country, bio")
