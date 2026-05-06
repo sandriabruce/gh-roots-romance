@@ -169,12 +169,21 @@ export default function Discover() {
     },
   });
 
-  const matchStatus: "matched" | "liked" | "none" = openPerson
+  // Derive a richer status so the sheet shows what the other side has done.
+  // - matched:       both sides connected (match is active)
+  // - liked_you:     they liked you first, waiting on your response
+  // - liked_by_you:  you liked them, waiting on a reply
+  // - none:          no interaction yet
+  const matchStatus: "matched" | "liked_you" | "liked_by_you" | "none" = openPerson
     ? openMatch?.status === "active"
       ? "matched"
-      : likedIds.has(openPerson.id)
-        ? "liked"
-        : "none"
+      : openMatch && user
+        ? openMatch.user_a === user.id
+          ? "liked_by_you"
+          : "liked_you"
+        : likedIds.has(openPerson.id)
+          ? "liked_by_you"
+          : "none"
     : "none";
 
   const handleLike = () => {
@@ -391,10 +400,19 @@ export default function Discover() {
                   )}
                   <div className="pt-1">
                     {matchStatus === "matched" && (
-                      <Badge className="bg-emerald-600 text-white hover:bg-emerald-600">It's a match</Badge>
+                      <Badge className="bg-emerald-600 text-white hover:bg-emerald-600">
+                        It's a match — you both liked each other
+                      </Badge>
                     )}
-                    {matchStatus === "liked" && (
-                      <Badge variant="secondary" className="rounded-full">Liked — waiting on a reply</Badge>
+                    {matchStatus === "liked_you" && (
+                      <Badge className="bg-ghana-gold text-ghana-brown hover:bg-ghana-gold/90">
+                        {openPerson.first_name ?? "They"} liked you — like back to match
+                      </Badge>
+                    )}
+                    {matchStatus === "liked_by_you" && (
+                      <Badge variant="secondary" className="rounded-full">
+                        You liked them — waiting on a reply
+                      </Badge>
                     )}
                   </div>
                 </SheetHeader>
@@ -447,10 +465,16 @@ export default function Discover() {
                   <Button
                     onClick={() => { handleLikeFromSheet(openPerson.id); setOpenId(null); }}
                     className="flex-1 bg-ghana-gold text-ghana-brown hover:bg-ghana-gold/90"
-                    disabled={limitReached || matchStatus !== "none"}
+                    disabled={limitReached || matchStatus === "matched" || matchStatus === "liked_by_you"}
                   >
                     <Heart className="mr-2 h-4 w-4 fill-current" />
-                    {matchStatus === "matched" ? "Matched" : matchStatus === "liked" ? "Liked" : "Like"}
+                    {matchStatus === "matched"
+                      ? "Matched"
+                      : matchStatus === "liked_by_you"
+                        ? "Liked"
+                        : matchStatus === "liked_you"
+                          ? "Like back"
+                          : "Like"}
                   </Button>
                   <Button
                     onClick={() => openChatWith(openPerson.id)}
