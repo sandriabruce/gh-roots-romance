@@ -51,7 +51,7 @@ export default function SeedRepliesAdmin() {
       .limit(300);
     setLoading(false);
     if (error) { toast.error(error.message); return; }
-    const list = (data ?? []) as QueueRow[];
+    const list = ((data ?? []) as unknown) as QueueRow[];
     setRows(list);
     const ids = Array.from(new Set(list.flatMap((r) => [r.seed_user_id, r.recipient_user_id])));
     if (ids.length) {
