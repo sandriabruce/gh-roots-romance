@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { Link, useParams } from "react-router-dom";
+import { Link, useNavigate, useParams } from "react-router-dom";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { SafetyBanner } from "@/components/safety/SafetyBanner";
 import { useEntitlements } from "@/hooks/useEntitlements";
@@ -19,9 +19,21 @@ export default function Chat() {
   const { id: matchId } = useParams<{ id: string }>();
   const { user } = useAuth();
   const qc = useQueryClient();
+  const navigate = useNavigate();
   const [draft, setDraft] = useState("");
   const [sending, setSending] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
+
+  const draftKey = matchId && user ? `chat-draft:${user.id}:${matchId}` : null;
+
+  // Restore any saved draft (e.g. after an upgrade redirect).
+  useEffect(() => {
+    if (!draftKey) return;
+    try {
+      const saved = localStorage.getItem(draftKey);
+      if (saved) setDraft(saved);
+    } catch { /* ignore */ }
+  }, [draftKey]);
 
   const { data: messages } = useQuery({
     queryKey: ["messages", matchId],
@@ -70,6 +82,16 @@ export default function Chat() {
   const isFreePlan = plan === "explorer" || plan === "verified";
   const overFreeLimit = isFreePlan && !trial.active && myMessageCount >= FREE_MESSAGE_LIMIT;
 
+  // When the user hits the cap with text in the box, persist it and send them to upgrade.
+  useEffect(() => {
+    if (!overFreeLimit || !draftKey) return;
+    if (draft.trim()) {
+      try { localStorage.setItem(draftKey, draft); } catch { /* ignore */ }
+      toast.message("We saved your message. Upgrade to send it.");
+      navigate("/app/verify");
+    }
+  }, [overFreeLimit, draft, draftKey, navigate]);
+
   async function send() {
     if (!draft.trim() || !user || !matchId) return;
     setSending(true);
@@ -81,6 +103,7 @@ export default function Chat() {
     setSending(false);
     if (error) { toast.error(error.message); return; }
     setDraft("");
+    if (draftKey) { try { localStorage.removeItem(draftKey); } catch { /* ignore */ } }
     qc.invalidateQueries({ queryKey: ["messages", matchId] });
   }
 
@@ -113,8 +136,22 @@ export default function Chat() {
           <p className="mt-1 text-xs text-muted-foreground">
             You've sent {myMessageCount} messages on the {plan === "verified" ? "Verified" : "Explorer"} plan. Premium and Diamond unlock unlimited messaging.
           </p>
+          {draft.trim() && (
+            <p className="mt-2 text-xs text-ghana-brown">
+              Your draft is saved — it'll be waiting here after you upgrade.
+            </p>
+          )}
           <Button asChild className="mt-3 bg-ghana-gold text-ghana-brown hover:bg-ghana-gold/90">
-            <Link to="/app/verify">Upgrade to Premium</Link>
+            <Link
+              to="/app/verify"
+              onClick={() => {
+                if (draftKey && draft.trim()) {
+                  try { localStorage.setItem(draftKey, draft); } catch { /* ignore */ }
+                }
+              }}
+            >
+              Upgrade to Premium
+            </Link>
           </Button>
         </div>
       ) : (
