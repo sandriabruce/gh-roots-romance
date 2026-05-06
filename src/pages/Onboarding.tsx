@@ -288,8 +288,37 @@ export default function Onboarding() {
       onboarded: true,
     };
     const { error } = await supabase.from("profiles").update(payload).eq("id", user.id);
+    if (error) { setSubmitting(false); toast.error(error.message); return; }
+
+    // Seed 5 starter matches from is_seed profiles aligned with their preference.
+    try {
+      const desiredGender =
+        form.interested_in === "Women" ? "Woman" :
+        form.interested_in === "Men" ? "Man" : null;
+      let seedQuery = supabase
+        .from("profiles")
+        .select("id")
+        .eq("is_seed", true)
+        .eq("onboarded", true)
+        .eq("banned", false)
+        .neq("id", user.id)
+        .limit(5);
+      if (desiredGender) seedQuery = seedQuery.eq("gender", desiredGender);
+      const { data: seeds } = await seedQuery;
+      if (seeds && seeds.length) {
+        const rows = seeds.map((s) => ({
+          user_a: user.id,
+          user_b: s.id,
+          status: "active" as const,
+          score: 80,
+        }));
+        await supabase.from("matches").insert(rows);
+      }
+    } catch (e) {
+      console.warn("seed match creation failed", e);
+    }
+
     setSubmitting(false);
-    if (error) { toast.error(error.message); return; }
     if (storageKey) {
       try { localStorage.removeItem(storageKey); } catch { /* ignore */ }
     }
