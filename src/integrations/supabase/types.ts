@@ -277,6 +277,45 @@ export type Database = {
         }
         Relationships: []
       }
+      seed_reply_queue: {
+        Row: {
+          created_at: string
+          id: string
+          match_id: string
+          processed_at: string | null
+          recipient_user_id: string
+          reply_at: string
+          seed_user_id: string
+          status: string
+          trigger_message_content: string
+          trigger_message_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          match_id: string
+          processed_at?: string | null
+          recipient_user_id: string
+          reply_at: string
+          seed_user_id: string
+          status?: string
+          trigger_message_content: string
+          trigger_message_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          match_id?: string
+          processed_at?: string | null
+          recipient_user_id?: string
+          reply_at?: string
+          seed_user_id?: string
+          status?: string
+          trigger_message_content?: string
+          trigger_message_id?: string
+        }
+        Relationships: []
+      }
       subscriptions: {
         Row: {
           amount: number
