@@ -1,273 +1,386 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Progress } from "@/components/ui/progress";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Checkbox } from "@/components/ui/checkbox";
 import { Card } from "@/components/ui/card";
 import { Logo } from "@/components/brand/Logo";
-import { ALL_LOCATIONS, INTERESTS, PROMPTS, RELIGIONS, ETHNICITIES } from "@/lib/brand";
+import { GHANA_CITIES, RELIGIONS, ETHNICITIES } from "@/lib/brand";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
 import { imageHasFace } from "@/features/face/detectFace";
-import { Heart, Sparkles, Upload } from "lucide-react";
+import { Upload, ArrowLeft, ArrowRight, Check } from "lucide-react";
 import { cn } from "@/lib/utils";
+
+const COUNTRIES = [
+  "Ghana", "United Kingdom", "United States", "Canada",
+  "Germany", "Netherlands", "Italy", "France", "South Africa",
+  "Nigeria", "Other",
+];
+
+const GENDERS = ["Woman", "Man", "Non-binary"];
+const INTERESTED_IN = ["Women", "Men", "Everyone"];
+const HAS_CHILDREN = ["No children", "Have children, living with me", "Have children, grown / not at home", "Prefer not to say"];
+const RELATIONSHIP_TYPES = [
+  "Marriage",
+  "Long-term relationship",
+  "Companionship",
+  "Dating, see what happens",
+  "Friendship first",
+];
+
+type StepId =
+  | "welcome" | "first_name" | "dob" | "gender" | "interested_in"
+  | "country" | "city" | "ethnicity" | "religion" | "has_children"
+  | "relationship_type" | "bio" | "photo" | "review";
+
+interface FormState {
+  first_name: string;
+  date_of_birth: string; // yyyy-mm-dd
+  gender: string;
+  interested_in: string;
+  country: string;
+  city: string;
+  ethnicity: string;
+  religion: string;
+  has_children: string;
+  relationship_type: string;
+  bio: string;
+  photo: string; // signed URL
+}
+
+const initialForm: FormState = {
+  first_name: "", date_of_birth: "", gender: "", interested_in: "",
+  country: "", city: "", ethnicity: "", religion: "", has_children: "",
+  relationship_type: "", bio: "", photo: "",
+};
+
+function calcAge(dob: string): number | null {
+  if (!dob) return null;
+  const d = new Date(dob);
+  if (isNaN(d.getTime())) return null;
+  const now = new Date();
+  let age = now.getFullYear() - d.getFullYear();
+  const m = now.getMonth() - d.getMonth();
+  if (m < 0 || (m === 0 && now.getDate() < d.getDate())) age--;
+  return age;
+}
 
 export default function Onboarding() {
   const { user } = useAuth();
   const navigate = useNavigate();
-  const [step, setStep] = useState(1);
-  const [data, setData] = useState<any>({
-    mode: "romance", consent18: false,
-    age: 45, gender: "", interested_in: "",
-    first_name: "", location: "",
-    photos: [] as string[],
-    promptIndex: 0, promptAnswer: "",
-    religion: "", ethnicity: "", values_text: "",
-    interests: [] as string[],
-    notifications_enabled: true, privacy_strict: false,
-  });
-  const totalSteps = 8;
-  const next = () => setStep((s) => Math.min(totalSteps, s + 1));
-  const back = () => setStep((s) => Math.max(1, s - 1));
+  const [form, setForm] = useState<FormState>(initialForm);
+  const [stepIndex, setStepIndex] = useState(0);
+  const [uploading, setUploading] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+
+  const steps: StepId[] = useMemo(() => [
+    "welcome", "first_name", "dob", "gender", "interested_in",
+    "country", "city", "ethnicity", "religion", "has_children",
+    "relationship_type", "bio", "photo", "review",
+  ], []);
+  const step = steps[stepIndex];
+  const total = steps.length - 1; // exclude welcome from progress denominator visually
+  const progress = Math.max(0, Math.min(100, (stepIndex / (steps.length - 1)) * 100));
+
+  const update = <K extends keyof FormState>(k: K, v: FormState[K]) =>
+    setForm((f) => ({ ...f, [k]: v }));
+
+  const age = calcAge(form.date_of_birth);
+
+  const canContinue = (() => {
+    switch (step) {
+      case "welcome": return true;
+      case "first_name": return form.first_name.trim().length >= 2;
+      case "dob": return age !== null && age >= 40 && age <= 110;
+      case "gender": return !!form.gender;
+      case "interested_in": return !!form.interested_in;
+      case "country": return !!form.country;
+      case "city": return form.city.trim().length >= 2;
+      case "ethnicity": return !!form.ethnicity;
+      case "religion": return !!form.religion;
+      case "has_children": return !!form.has_children;
+      case "relationship_type": return !!form.relationship_type;
+      case "bio": return form.bio.trim().length >= 20;
+      case "photo": return !!form.photo;
+      case "review": return true;
+    }
+  })();
 
   async function uploadPhoto(file: File) {
     if (!user) return;
-    const check = await imageHasFace(file);
-    if (!check.ok) {
-      toast.error(`"${file.name}" was rejected: ${check.reason}`, {
-        description: check.tip,
-      });
-      return;
+    setUploading(true);
+    try {
+      const check = await imageHasFace(file);
+      if (!check.ok) {
+        toast.error(`Photo rejected: ${check.reason}`, { description: check.tip });
+        return;
+      }
+      const path = `${user.id}/${Date.now()}-${file.name.replace(/[^a-zA-Z0-9.]/g, "_")}`;
+      const { error } = await supabase.storage.from("profile-photos").upload(path, file, { upsert: false });
+      if (error) { toast.error(error.message); return; }
+      const { data: urlData } = await supabase.storage
+        .from("profile-photos")
+        .createSignedUrl(path, 60 * 60 * 24 * 365);
+      if (urlData?.signedUrl) update("photo", urlData.signedUrl);
+    } finally {
+      setUploading(false);
     }
-    const path = `${user.id}/${Date.now()}-${file.name.replace(/[^a-zA-Z0-9.]/g, "_")}`;
-    const { error } = await supabase.storage.from("profile-photos").upload(path, file, { upsert: false });
-    if (error) { toast.error(error.message); return; }
-    const { data: urlData } = await supabase.storage.from("profile-photos").createSignedUrl(path, 60 * 60 * 24 * 365);
-    if (urlData?.signedUrl) setData((d: any) => ({ ...d, photos: [...d.photos, urlData.signedUrl] }));
   }
 
   async function finish() {
     if (!user) return;
+    setSubmitting(true);
     const payload = {
-      first_name: data.first_name || null,
-      age: data.age,
-      gender: data.gender || null,
-      interested_in: data.interested_in || null,
-      location: data.location || null,
-      ethnicity: data.ethnicity || null,
-      religion: data.religion || null,
-      values_text: data.values_text || null,
-      mode: data.mode,
-      photos: data.photos,
-      interests: data.interests,
-      prompts: [{ q: PROMPTS[data.promptIndex], a: data.promptAnswer }],
-      notifications_enabled: data.notifications_enabled,
-      privacy_strict: data.privacy_strict,
+      first_name: form.first_name.trim(),
+      date_of_birth: form.date_of_birth,
+      age,
+      gender: form.gender,
+      interested_in: form.interested_in,
+      country: form.country,
+      city: form.city.trim(),
+      location: form.city.trim(),
+      ethnicity: form.ethnicity,
+      religion: form.religion,
+      has_children: form.has_children,
+      relationship_type: form.relationship_type,
+      bio: form.bio.trim(),
+      values_text: form.bio.trim(),
+      photos: [form.photo],
       onboarded: true,
     };
     const { error } = await supabase.from("profiles").update(payload).eq("id", user.id);
+    setSubmitting(false);
     if (error) { toast.error(error.message); return; }
-    toast.success("Profile ready! Welcome to GH SUƆMƆ.");
+    toast.success("Welcome to GH SUƆMƆ — your profile is live.");
     navigate("/app/discover");
   }
 
-  const toggleInterest = (i: string) =>
-    setData((d: any) => ({ ...d, interests: d.interests.includes(i) ? d.interests.filter((x: string) => x !== i) : d.interests.length < 8 ? [...d.interests, i] : d.interests }));
-
-  const sparkBlocked = data.mode === "spark" && !data.consent18;
-  const canAdvance = (() => {
-    if (step === 1) return !sparkBlocked;
-    if (step === 2) return data.age >= 40 && data.gender && data.interested_in;
-    if (step === 3) return data.first_name.length >= 2 && data.location;
-    if (step === 4) return data.photos.length >= 1;
-    if (step === 5) return data.promptAnswer.trim().length > 5;
-    if (step === 6) return data.mode === "romance" ? data.religion && data.values_text : data.values_text;
-    if (step === 7) return data.interests.length >= 3;
-    return true;
-  })();
+  const next = () => setStepIndex((i) => Math.min(steps.length - 1, i + 1));
+  const back = () => setStepIndex((i) => Math.max(0, i - 1));
 
   return (
     <div className="min-h-screen bg-gradient-warm px-4 py-6">
       <div className="mx-auto max-w-xl">
         <Logo size="sm" className="mb-4" />
-        <Progress value={(step / totalSteps) * 100} className="h-2" />
-        <p className="mt-2 text-xs text-muted-foreground">Step {step} of {totalSteps}</p>
+        {step !== "welcome" && (
+          <>
+            <Progress value={progress} className="h-2" />
+            <p className="mt-2 text-xs text-muted-foreground">
+              Step {stepIndex} of {total}
+            </p>
+          </>
+        )}
 
-        <Card className="mt-4 rounded-3xl p-6 shadow-card">
-          {step === 1 && (
-            <>
-              <h2 className="heading-gold font-display text-2xl font-bold">Choose your path</h2>
-              <p className="text-sm text-muted-foreground mt-1">You can switch later in your profile.</p>
-              <div className="mt-4 grid gap-3">
-                {[
-                  { id: "romance", title: "Romance", desc: "Serious relationships, marriage, lasting connection.", icon: Heart, ring: "ring-ghana-gold" },
-                  { id: "spark", title: "Spark (18+)", desc: "Casual adult connections with grown matches.", icon: Sparkles, ring: "ring-ghana-red" },
-                ].map((opt) => (
-                  <button
-                    key={opt.id}
-                    onClick={() => setData((d: any) => ({ ...d, mode: opt.id }))}
-                    className={cn("rounded-2xl border-2 p-4 text-left transition", data.mode === opt.id ? `border-transparent ring-2 ${opt.ring} bg-card` : "border-border bg-background")}
-                  >
-                    <div className="flex items-center gap-3">
-                      <opt.icon className={cn("h-6 w-6", opt.id === "romance" ? "text-ghana-gold" : "text-ghana-red")} />
-                      <div>
-                        <p className="font-semibold">{opt.title}</p>
-                        <p className="text-xs text-muted-foreground">{opt.desc}</p>
-                      </div>
-                    </div>
-                  </button>
-                ))}
-                {data.mode === "spark" && (
-                  <label className="flex items-start gap-2 rounded-xl border bg-muted p-3 text-sm">
-                    <Checkbox checked={data.consent18} onCheckedChange={(v) => setData((d: any) => ({ ...d, consent18: v === true }))} />
-                    <span>I confirm I am 18 years or older and consent to seeing adult-oriented content.</span>
-                  </label>
+        <Card className="mt-4 rounded-3xl p-6 shadow-card min-h-[420px] flex flex-col">
+          <div className="flex-1">
+            {step === "welcome" && (
+              <div className="text-center py-6">
+                <h2 className="heading-gold font-display text-3xl font-bold">Akwaaba 👋</h2>
+                <p className="mt-3 text-base text-muted-foreground">
+                  Let's set up your profile. It takes about 3 minutes — one question at a time, just like a friendly chat.
+                </p>
+                <p className="mt-2 text-sm text-muted-foreground">
+                  GH SUƆMƆ is for grown people 40+. Take your time.
+                </p>
+              </div>
+            )}
+
+            {step === "first_name" && (
+              <Question title="What's your first name?" hint="This is how you'll appear to matches.">
+                <Input
+                  autoFocus value={form.first_name} maxLength={50}
+                  placeholder="e.g. Ama"
+                  onChange={(e) => update("first_name", e.target.value)}
+                />
+              </Question>
+            )}
+
+            {step === "dob" && (
+              <Question title="When's your birthday?" hint="We use this to confirm you're 40+. We'll only show your age, never your full date of birth.">
+                <Input
+                  type="date" value={form.date_of_birth}
+                  max={new Date().toISOString().slice(0, 10)}
+                  onChange={(e) => update("date_of_birth", e.target.value)}
+                />
+                {age !== null && age < 40 && (
+                  <p className="mt-2 text-xs text-destructive">GH SUƆMƆ is for members 40 and older.</p>
                 )}
-              </div>
-            </>
-          )}
+                {age !== null && age >= 40 && (
+                  <p className="mt-2 text-xs text-muted-foreground">You're {age} — perfect.</p>
+                )}
+              </Question>
+            )}
 
-          {step === 2 && (
-            <>
-              <h2 className="heading-gold font-display text-2xl font-bold">About you</h2>
-              <div className="mt-4 grid gap-3">
-                <div>
-                  <Label>Age</Label>
-                  <Input type="number" min={40} value={data.age} onChange={(e) => setData((d: any) => ({ ...d, age: parseInt(e.target.value || "40") }))} />
-                  <p className="text-xs text-muted-foreground mt-1">GH SUƆMƆ is for members 40+.</p>
-                </div>
-                <div>
-                  <Label>I am</Label>
-                  <div className="flex gap-2 mt-1">
-                    {["Woman", "Man", "Non-binary"].map((g) => (
-                      <button key={g} onClick={() => setData((d: any) => ({ ...d, gender: g }))} className={cn("rounded-full border px-4 py-1.5 text-sm", data.gender === g ? "bg-ghana-gold text-ghana-brown border-ghana-gold" : "")}>{g}</button>
-                    ))}
-                  </div>
-                </div>
-                <div>
-                  <Label>Interested in</Label>
-                  <div className="flex gap-2 mt-1">
-                    {["Women", "Men", "Everyone"].map((g) => (
-                      <button key={g} onClick={() => setData((d: any) => ({ ...d, interested_in: g }))} className={cn("rounded-full border px-4 py-1.5 text-sm", data.interested_in === g ? "bg-ghana-gold text-ghana-brown border-ghana-gold" : "")}>{g}</button>
-                    ))}
-                  </div>
-                </div>
-              </div>
-            </>
-          )}
+            {step === "gender" && (
+              <Question title="How do you identify?">
+                <Choices options={GENDERS} value={form.gender} onChange={(v) => update("gender", v)} />
+              </Question>
+            )}
 
-          {step === 3 && (
-            <>
-              <h2 className="heading-gold font-display text-2xl font-bold">Your name & home</h2>
-              <div className="mt-4 grid gap-3">
-                <div><Label>First name</Label><Input value={data.first_name} onChange={(e) => setData((d: any) => ({ ...d, first_name: e.target.value }))} /></div>
-                <div>
-                  <Label>Where you live</Label>
-                  <select className="mt-1 w-full rounded-md border bg-background px-3 py-2" value={data.location} onChange={(e) => setData((d: any) => ({ ...d, location: e.target.value }))}>
-                    <option value="">Select a location…</option>
-                    {ALL_LOCATIONS.map((l) => <option key={l}>{l}</option>)}
-                  </select>
-                </div>
-              </div>
-            </>
-          )}
+            {step === "interested_in" && (
+              <Question title="Who are you interested in meeting?">
+                <Choices options={INTERESTED_IN} value={form.interested_in} onChange={(v) => update("interested_in", v)} />
+              </Question>
+            )}
 
-          {step === 4 && (
-            <>
-              <h2 className="heading-gold font-display text-2xl font-bold">Your photos</h2>
-              <p className="text-sm text-muted-foreground mt-1">Add up to 6 photos. We use face detection to keep things real.</p>
-              <div className="mt-4 grid grid-cols-3 gap-3">
-                {Array.from({ length: 6 }).map((_, i) => (
-                  <div key={i} className="aspect-square rounded-2xl border-2 border-dashed bg-muted overflow-hidden flex items-center justify-center">
-                    {data.photos[i] ? (
-                      <img src={data.photos[i]} alt="" className="h-full w-full object-cover no-snap" onContextMenu={(e) => e.preventDefault()} />
+            {step === "country" && (
+              <Question title="Which country do you live in?" hint="At home in Ghana or across the diaspora — both are welcome.">
+                <Choices options={COUNTRIES} value={form.country} onChange={(v) => update("country", v)} />
+              </Question>
+            )}
+
+            {step === "city" && (
+              <Question title="Which city or town?" hint={form.country === "Ghana" ? "Pick the one closest to you." : "Type the name of your city."}>
+                {form.country === "Ghana" ? (
+                  <Choices options={GHANA_CITIES} value={form.city} onChange={(v) => update("city", v)} />
+                ) : (
+                  <Input
+                    autoFocus value={form.city} maxLength={80}
+                    placeholder="e.g. London"
+                    onChange={(e) => update("city", e.target.value)}
+                  />
+                )}
+              </Question>
+            )}
+
+            {step === "ethnicity" && (
+              <Question title="What's your heritage?" hint="Optional — helps with cultural matching.">
+                <Choices options={[...ETHNICITIES, "Prefer not to say"]} value={form.ethnicity} onChange={(v) => update("ethnicity", v)} />
+              </Question>
+            )}
+
+            {step === "religion" && (
+              <Question title="What's your faith?">
+                <Choices options={RELIGIONS} value={form.religion} onChange={(v) => update("religion", v)} />
+              </Question>
+            )}
+
+            {step === "has_children" && (
+              <Question title="Do you have children?">
+                <Choices options={HAS_CHILDREN} value={form.has_children} onChange={(v) => update("has_children", v)} />
+              </Question>
+            )}
+
+            {step === "relationship_type" && (
+              <Question title="What kind of relationship are you looking for?">
+                <Choices options={RELATIONSHIP_TYPES} value={form.relationship_type} onChange={(v) => update("relationship_type", v)} />
+              </Question>
+            )}
+
+            {step === "bio" && (
+              <Question title="Tell us a little about yourself" hint="A few warm sentences. What matters to you, what makes you smile? (At least 20 characters)">
+                <textarea
+                  className="mt-1 min-h-32 w-full rounded-md border bg-background px-3 py-2 text-sm"
+                  value={form.bio} maxLength={600}
+                  placeholder="I'm a calm, family-oriented person who loves Sunday afternoons with good food and good company…"
+                  onChange={(e) => update("bio", e.target.value)}
+                />
+                <p className="mt-1 text-xs text-muted-foreground text-right">{form.bio.length}/600</p>
+              </Question>
+            )}
+
+            {step === "photo" && (
+              <Question title="Add a clear photo of you" hint="Solo, face visible, no sunglasses. We use face detection to keep things real.">
+                <div className="mt-2 flex flex-col items-center gap-3">
+                  <div className="aspect-square w-48 rounded-2xl border-2 border-dashed bg-muted overflow-hidden flex items-center justify-center">
+                    {form.photo ? (
+                      <img src={form.photo} alt="" className="h-full w-full object-cover" />
                     ) : (
                       <label className="flex h-full w-full cursor-pointer flex-col items-center justify-center text-xs text-muted-foreground">
-                        <Upload className="h-5 w-5 mb-1" />
-                        Add
-                        <input type="file" accept="image/*" className="hidden" onChange={(e) => { const f = e.target.files?.[0]; if (f) uploadPhoto(f); }} />
+                        <Upload className="h-6 w-6 mb-1" />
+                        {uploading ? "Checking…" : "Tap to upload"}
+                        <input type="file" accept="image/*" className="hidden"
+                          onChange={(e) => { const f = e.target.files?.[0]; if (f) uploadPhoto(f); }} />
                       </label>
                     )}
                   </div>
-                ))}
-              </div>
-            </>
-          )}
-
-          {step === 5 && (
-            <>
-              <h2 className="heading-gold font-display text-2xl font-bold">A prompt about you</h2>
-              <select className="mt-3 w-full rounded-md border bg-background px-3 py-2" value={data.promptIndex} onChange={(e) => setData((d: any) => ({ ...d, promptIndex: parseInt(e.target.value) }))}>
-                {PROMPTS.map((p, i) => <option key={i} value={i}>{p}</option>)}
-              </select>
-              <textarea className="mt-3 min-h-32 w-full rounded-md border bg-background px-3 py-2" value={data.promptAnswer} onChange={(e) => setData((d: any) => ({ ...d, promptAnswer: e.target.value }))} placeholder="Write your answer…" />
-            </>
-          )}
-
-          {step === 6 && (
-            <>
-              <h2 className="heading-gold font-display text-2xl font-bold">{data.mode === "romance" ? "Faith & values" : "Discretion preferences"}</h2>
-              <div className="mt-4 grid gap-3">
-                {data.mode === "romance" && (
-                  <>
-                    <div>
-                      <Label>Religion</Label>
-                      <select className="mt-1 w-full rounded-md border bg-background px-3 py-2" value={data.religion} onChange={(e) => setData((d: any) => ({ ...d, religion: e.target.value }))}>
-                        <option value="">Select…</option>
-                        {RELIGIONS.map((r) => <option key={r}>{r}</option>)}
-                      </select>
-                    </div>
-                    <div>
-                      <Label>Ethnicity (optional)</Label>
-                      <select className="mt-1 w-full rounded-md border bg-background px-3 py-2" value={data.ethnicity} onChange={(e) => setData((d: any) => ({ ...d, ethnicity: e.target.value }))}>
-                        <option value="">Prefer not to say</option>
-                        {ETHNICITIES.map((r) => <option key={r}>{r}</option>)}
-                      </select>
-                    </div>
-                  </>
-                )}
-                <div>
-                  <Label>{data.mode === "romance" ? "What you value most" : "How discreet do you need to be?"}</Label>
-                  <Input value={data.values_text} onChange={(e) => setData((d: any) => ({ ...d, values_text: e.target.value }))} placeholder={data.mode === "romance" ? "e.g. honesty, family, faith" : "e.g. very private, no public photos"} />
+                  {form.photo && (
+                    <Button variant="outline" size="sm" className="rounded-full"
+                      onClick={() => update("photo", "")}>Replace photo</Button>
+                  )}
                 </div>
-              </div>
-            </>
-          )}
+              </Question>
+            )}
 
-          {step === 7 && (
-            <>
-              <h2 className="heading-gold font-display text-2xl font-bold">Pick at least 3 interests</h2>
-              <div className="mt-4 flex flex-wrap gap-2">
-                {INTERESTS.map((i) => (
-                  <button key={i} onClick={() => toggleInterest(i)} className={cn("rounded-full border px-3 py-1.5 text-sm", data.interests.includes(i) ? "bg-ghana-gold text-ghana-brown border-ghana-gold" : "")}>{i}</button>
-                ))}
+            {step === "review" && (
+              <div>
+                <h2 className="heading-gold font-display text-2xl font-bold">Looks good?</h2>
+                <p className="text-sm text-muted-foreground mt-1">Review your details. You can edit them anytime from your profile.</p>
+                <dl className="mt-4 grid grid-cols-1 gap-2 text-sm">
+                  <Row label="Name" value={form.first_name} />
+                  <Row label="Age" value={age != null ? `${age}` : ""} />
+                  <Row label="Gender" value={form.gender} />
+                  <Row label="Interested in" value={form.interested_in} />
+                  <Row label="Lives in" value={`${form.city}, ${form.country}`} />
+                  <Row label="Heritage" value={form.ethnicity} />
+                  <Row label="Faith" value={form.religion} />
+                  <Row label="Children" value={form.has_children} />
+                  <Row label="Looking for" value={form.relationship_type} />
+                  <Row label="About" value={form.bio} multiline />
+                </dl>
               </div>
-            </>
-          )}
-
-          {step === 8 && (
-            <>
-              <h2 className="heading-gold font-display text-2xl font-bold">Notifications & privacy</h2>
-              <div className="mt-4 space-y-3">
-                <label className="flex items-start gap-2"><Checkbox checked={data.notifications_enabled} onCheckedChange={(v) => setData((d: any) => ({ ...d, notifications_enabled: v === true }))} /><span className="text-sm">Email me about new matches and messages.</span></label>
-                <label className="flex items-start gap-2"><Checkbox checked={data.privacy_strict} onCheckedChange={(v) => setData((d: any) => ({ ...d, privacy_strict: v === true }))} /><span className="text-sm">Strict privacy — only show me to verified members.</span></label>
-              </div>
-            </>
-          )}
+            )}
+          </div>
 
           <div className="mt-6 flex justify-between gap-2">
-            <Button variant="outline" onClick={back} disabled={step === 1} className="rounded-full">Back</Button>
-            {step < totalSteps ? (
-              <Button onClick={next} disabled={!canAdvance} className="rounded-full bg-ghana-gold text-ghana-brown hover:bg-ghana-gold/90">Continue</Button>
+            <Button variant="outline" onClick={back} disabled={stepIndex === 0} className="rounded-full">
+              <ArrowLeft className="h-4 w-4 mr-1" /> Back
+            </Button>
+            {step !== "review" ? (
+              <Button onClick={next} disabled={!canContinue}
+                className="rounded-full bg-ghana-gold text-ghana-brown hover:bg-ghana-gold/90">
+                {step === "welcome" ? "Let's begin" : "Continue"} <ArrowRight className="h-4 w-4 ml-1" />
+              </Button>
             ) : (
-              <Button onClick={finish} className="rounded-full bg-ghana-gold text-ghana-brown hover:bg-ghana-gold/90">Finish</Button>
+              <Button onClick={finish} disabled={submitting}
+                className="rounded-full bg-ghana-gold text-ghana-brown hover:bg-ghana-gold/90">
+                <Check className="h-4 w-4 mr-1" /> {submitting ? "Saving…" : "Finish & meet people"}
+              </Button>
             )}
           </div>
         </Card>
       </div>
+    </div>
+  );
+}
+
+function Question({ title, hint, children }: { title: string; hint?: string; children: React.ReactNode }) {
+  return (
+    <div>
+      <h2 className="heading-gold font-display text-2xl font-bold">{title}</h2>
+      {hint && <p className="mt-1 text-sm text-muted-foreground">{hint}</p>}
+      <div className="mt-4">{children}</div>
+    </div>
+  );
+}
+
+function Choices({ options, value, onChange }: { options: string[]; value: string; onChange: (v: string) => void }) {
+  return (
+    <div className="grid gap-2">
+      {options.map((o) => (
+        <button key={o} type="button" onClick={() => onChange(o)}
+          className={cn(
+            "rounded-2xl border-2 px-4 py-3 text-left text-sm transition",
+            value === o
+              ? "border-transparent ring-2 ring-ghana-gold bg-card font-medium"
+              : "border-border bg-background hover:bg-muted/50"
+          )}>
+          {o}
+        </button>
+      ))}
+    </div>
+  );
+}
+
+function Row({ label, value, multiline }: { label: string; value: string; multiline?: boolean }) {
+  return (
+    <div className="flex gap-3 border-b border-border/50 pb-2">
+      <dt className="w-28 flex-shrink-0 text-xs uppercase tracking-wider text-muted-foreground">{label}</dt>
+      <dd className={cn("flex-1 text-foreground", multiline ? "whitespace-pre-wrap" : "")}>
+        {value || <span className="text-muted-foreground italic">—</span>}
+      </dd>
     </div>
   );
 }

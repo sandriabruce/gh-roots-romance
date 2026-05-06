@@ -150,12 +150,16 @@ export type Database = {
           age: number | null
           banned: boolean
           bio: string | null
+          city: string | null
+          country: string | null
           created_at: string
+          date_of_birth: string | null
           email: string | null
           ethnicity: string | null
           first_name: string | null
           flagged: boolean
           gender: string | null
+          has_children: string | null
           id: string
           interested_in: string | null
           interests: Json | null
@@ -168,6 +172,7 @@ export type Database = {
           plan: Database["public"]["Enums"]["plan_tier"]
           privacy_strict: boolean | null
           prompts: Json | null
+          relationship_type: string | null
           religion: string | null
           trial_start: string | null
           updated_at: string
@@ -178,12 +183,16 @@ export type Database = {
           age?: number | null
           banned?: boolean
           bio?: string | null
+          city?: string | null
+          country?: string | null
           created_at?: string
+          date_of_birth?: string | null
           email?: string | null
           ethnicity?: string | null
           first_name?: string | null
           flagged?: boolean
           gender?: string | null
+          has_children?: string | null
           id: string
           interested_in?: string | null
           interests?: Json | null
@@ -196,6 +205,7 @@ export type Database = {
           plan?: Database["public"]["Enums"]["plan_tier"]
           privacy_strict?: boolean | null
           prompts?: Json | null
+          relationship_type?: string | null
           religion?: string | null
           trial_start?: string | null
           updated_at?: string
@@ -206,12 +216,16 @@ export type Database = {
           age?: number | null
           banned?: boolean
           bio?: string | null
+          city?: string | null
+          country?: string | null
           created_at?: string
+          date_of_birth?: string | null
           email?: string | null
           ethnicity?: string | null
           first_name?: string | null
           flagged?: boolean
           gender?: string | null
+          has_children?: string | null
           id?: string
           interested_in?: string | null
           interests?: Json | null
@@ -224,6 +238,7 @@ export type Database = {
           plan?: Database["public"]["Enums"]["plan_tier"]
           privacy_strict?: boolean | null
           prompts?: Json | null
+          relationship_type?: string | null
           religion?: string | null
           trial_start?: string | null
           updated_at?: string
