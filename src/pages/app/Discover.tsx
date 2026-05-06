@@ -9,6 +9,7 @@ import { CoupleCard, SAMPLE_COUPLES } from "@/components/brand/CoupleCard";
 import { useEntitlements } from "@/hooks/useEntitlements";
 import { TrialBadge } from "@/components/plan/TrialBadge";
 import { PlanLockOverlay } from "@/components/plan/PlanLockOverlay";
+import { InstallBanner } from "@/components/pwa/InstallBanner";
 
 type Candidate = {
   id: string;
@@ -141,6 +142,7 @@ export default function Discover() {
           {SAMPLE_COUPLES.map((c) => <CoupleCard key={c.id} couple={c} />)}
         </div>
       </section>
+      <InstallBanner />
     </div>
   );
 }
