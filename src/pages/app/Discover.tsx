@@ -1,9 +1,10 @@
 import { SafetyBanner } from "@/components/safety/SafetyBanner";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { Heart, X, MessageCircle } from "lucide-react";
+import { Heart, X, MessageCircle, BadgeCheck } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useProfile } from "@/hooks/useProfile";
@@ -25,6 +26,7 @@ type Candidate = {
   photos: string[];
   interests: string[];
   ethnicity: string | null;
+  verified: boolean;
 };
 
 export default function Discover() {
@@ -38,6 +40,7 @@ export default function Discover() {
   const [loading, setLoading] = useState(true);
   const [openId, setOpenId] = useState<string | null>(null);
   const [openingChat, setOpeningChat] = useState(false);
+  const [likedIds, setLikedIds] = useState<Set<string>>(new Set());
   const mode = profile?.mode ?? "romance";
   const accent = mode === "spark" ? "bg-gradient-spark" : "bg-gradient-romance";
   const limit = limits.weeklyMatchLimit;
@@ -58,7 +61,7 @@ export default function Discover() {
       setLoading(true);
       const { data, error } = await supabase
         .from("profiles")
-        .select("id, first_name, age, location, bio, photos, interests, ethnicity")
+        .select("id, first_name, age, location, bio, photos, interests, ethnicity, verified")
         .eq("is_seed", true)
         .eq("banned", false)
         .in("gender", targetGenders)
@@ -76,6 +79,7 @@ export default function Discover() {
           photos: Array.isArray(row.photos) ? (row.photos as string[]) : [],
           interests: Array.isArray(row.interests) ? (row.interests as string[]) : [],
           ethnicity: (row.ethnicity as string | null) ?? null,
+          verified: !!row.verified,
         }));
         // Light shuffle so the deck feels fresh on every visit.
         for (let j = mapped.length - 1; j > 0; j--) {
@@ -93,8 +97,39 @@ export default function Discover() {
   const cover = person?.photos?.[0];
   const openPerson = candidates.find((c) => c.id === openId) ?? null;
 
+  // Fetch the existing match (if any) with the open profile to surface status.
+  const { data: openMatch } = useQuery({
+    queryKey: ["match-with", user?.id, openId],
+    enabled: !!user && !!openId,
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("matches")
+        .select("id,status,user_a,user_b")
+        .or(`and(user_a.eq.${user!.id},user_b.eq.${openId!}),and(user_a.eq.${openId!},user_b.eq.${user!.id})`)
+        .limit(1)
+        .maybeSingle();
+      return data ?? null;
+    },
+  });
+
+  const matchStatus: "matched" | "liked" | "none" = openPerson
+    ? openMatch?.status === "active"
+      ? "matched"
+      : likedIds.has(openPerson.id)
+        ? "liked"
+        : "none"
+    : "none";
+
   const handleLike = () => {
     if (limitReached) return;
+    if (person) setLikedIds((s) => new Set(s).add(person.id));
+    setLikes((n) => n + 1);
+    setI((x) => x + 1);
+  };
+
+  const handleLikeFromSheet = (id: string) => {
+    if (limitReached) return;
+    setLikedIds((s) => new Set(s).add(id));
     setLikes((n) => n + 1);
     setI((x) => x + 1);
   };
@@ -207,12 +242,30 @@ export default function Discover() {
               )}
               <div className="p-5 space-y-4">
                 <SheetHeader className="text-left">
-                  <SheetTitle className="font-display text-2xl text-ghana-brown">
-                    {openPerson.first_name ?? "Member"}{openPerson.age ? `, ${openPerson.age}` : ""}
+                  <SheetTitle className="font-display text-2xl text-ghana-brown flex items-center gap-2">
+                    <span>
+                      {openPerson.first_name ?? "Member"}{openPerson.age ? `, ${openPerson.age}` : ""}
+                    </span>
+                    {openPerson.verified && (
+                      <span
+                        title="Verified member"
+                        className="inline-flex items-center gap-1 rounded-full bg-ghana-gold/20 px-2 py-0.5 text-xs font-semibold text-ghana-brown"
+                      >
+                        <BadgeCheck className="h-3.5 w-3.5" /> Verified
+                      </span>
+                    )}
                   </SheetTitle>
                   {openPerson.location && (
                     <p className="text-sm text-muted-foreground">{openPerson.location}</p>
                   )}
+                  <div className="pt-1">
+                    {matchStatus === "matched" && (
+                      <Badge className="bg-emerald-600 text-white hover:bg-emerald-600">It's a match</Badge>
+                    )}
+                    {matchStatus === "liked" && (
+                      <Badge variant="secondary" className="rounded-full">Liked — waiting on a reply</Badge>
+                    )}
+                  </div>
                 </SheetHeader>
 
                 {openPerson.bio && (
@@ -242,19 +295,25 @@ export default function Discover() {
 
                 <div className="sticky bottom-0 -mx-5 mt-2 flex gap-3 border-t bg-background/95 px-5 py-3 backdrop-blur">
                   <Button
-                    onClick={() => { handleLike(); setOpenId(null); }}
+                    onClick={() => { handleLikeFromSheet(openPerson.id); setOpenId(null); }}
                     className="flex-1 bg-ghana-gold text-ghana-brown hover:bg-ghana-gold/90"
-                    disabled={limitReached}
+                    disabled={limitReached || matchStatus !== "none"}
                   >
-                    <Heart className="mr-2 h-4 w-4 fill-current" /> Like
+                    <Heart className="mr-2 h-4 w-4 fill-current" />
+                    {matchStatus === "matched" ? "Matched" : matchStatus === "liked" ? "Liked" : "Like"}
                   </Button>
                   <Button
                     onClick={() => openChatWith(openPerson.id)}
                     disabled={openingChat}
-                    variant="outline"
-                    className="flex-1 border-ghana-brown text-ghana-brown"
+                    variant={matchStatus === "matched" ? "default" : "outline"}
+                    className={
+                      matchStatus === "matched"
+                        ? "flex-1 bg-ghana-brown text-white hover:bg-ghana-brown/90"
+                        : "flex-1 border-ghana-brown text-ghana-brown"
+                    }
                   >
-                    <MessageCircle className="mr-2 h-4 w-4" /> Message
+                    <MessageCircle className="mr-2 h-4 w-4" />
+                    {matchStatus === "matched" ? "Open chat" : "Message"}
                   </Button>
                 </div>
               </div>
