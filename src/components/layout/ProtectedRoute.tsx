@@ -18,8 +18,7 @@ export function ProtectedRoute({ children, adminOnly = false }: { children: Reac
     const incomplete =
       !profile?.first_name?.trim() ||
       !profile?.gender ||
-      !profile?.interested_in ||
-      !profile?.age;
+      !profile?.interested_in;
     if (incomplete) return <Navigate to="/onboarding" replace />;
   }
   return <>{children}</>;
