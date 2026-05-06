@@ -1,7 +1,7 @@
 import { SafetyBanner } from "@/components/safety/SafetyBanner";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { Heart, X, MessageCircle, BadgeCheck, Flag, Ban } from "lucide-react";
+import { Heart, X, MessageCircle, BadgeCheck, ShieldAlert, Flag, Ban } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
@@ -386,12 +386,19 @@ export default function Discover() {
                     <span>
                       {openPerson.first_name ?? "Member"}{openPerson.age ? `, ${openPerson.age}` : ""}
                     </span>
-                    {openPerson.verified && (
+                    {openPerson.verified ? (
                       <span
                         title="Verified member"
                         className="inline-flex items-center gap-1 rounded-full bg-ghana-gold/20 px-2 py-0.5 text-xs font-semibold text-ghana-brown"
                       >
                         <BadgeCheck className="h-3.5 w-3.5" /> Verified
+                      </span>
+                    ) : (
+                      <span
+                        title="This member hasn't completed photo verification yet"
+                        className="inline-flex items-center gap-1 rounded-full bg-muted px-2 py-0.5 text-xs font-semibold text-muted-foreground"
+                      >
+                        <ShieldAlert className="h-3.5 w-3.5" /> Unverified
                       </span>
                     )}
                   </SheetTitle>
