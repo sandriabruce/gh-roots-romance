@@ -16,6 +16,14 @@ import { InstallBanner } from "@/components/pwa/InstallBanner";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { Badge } from "@/components/ui/badge";
 import {
+  Carousel,
+  CarouselContent,
+  CarouselItem,
+  CarouselNext,
+  CarouselPrevious,
+  type CarouselApi,
+} from "@/components/ui/carousel";
+import {
   AlertDialog,
   AlertDialogAction,
   AlertDialogCancel,
@@ -70,6 +78,24 @@ export default function Discover() {
   const [reportDetail, setReportDetail] = useState("");
   const [reportSubmitting, setReportSubmitting] = useState(false);
   const [confirmBlockFor, setConfirmBlockFor] = useState<string | null>(null);
+  const [galleryApi, setGalleryApi] = useState<CarouselApi | null>(null);
+  const [galleryIndex, setGalleryIndex] = useState(0);
+
+  // Track active slide to render dot indicators.
+  useEffect(() => {
+    if (!galleryApi) return;
+    const onSelect = () => setGalleryIndex(galleryApi.selectedScrollSnap());
+    onSelect();
+    galleryApi.on("select", onSelect);
+    galleryApi.on("reInit", onSelect);
+    return () => { galleryApi.off("select", onSelect); };
+  }, [galleryApi]);
+
+  // Reset to first photo whenever a new profile opens.
+  useEffect(() => {
+    setGalleryIndex(0);
+    galleryApi?.scrollTo(0, true);
+  }, [openId, galleryApi]);
   const mode = profile?.mode ?? "romance";
   const accent = mode === "spark" ? "bg-gradient-spark" : "bg-gradient-romance";
   const limit = limits.weeklyMatchLimit;
@@ -296,13 +322,54 @@ export default function Discover() {
         <SheetContent side="bottom" className="max-h-[92vh] overflow-y-auto rounded-t-3xl p-0">
           {openPerson && (
             <>
-              {openPerson.photos[0] && (
-                <img
-                  src={openPerson.photos[0]}
-                  alt={openPerson.first_name ?? "Member"}
-                  className="h-72 w-full object-cover"
-                  onContextMenu={(e) => e.preventDefault()}
-                />
+              {openPerson.photos.length > 0 && (
+                <div className="relative bg-muted">
+                  <Carousel
+                    setApi={setGalleryApi}
+                    opts={{ loop: openPerson.photos.length > 1, align: "start" }}
+                    className="w-full"
+                  >
+                    <CarouselContent className="ml-0">
+                      {openPerson.photos.map((src, idx) => (
+                        <CarouselItem key={`${src}-${idx}`} className="pl-0 basis-full">
+                          <img
+                            src={src}
+                            alt={`${openPerson.first_name ?? "Member"} photo ${idx + 1}`}
+                            className="h-80 w-full object-cover"
+                            onContextMenu={(e) => e.preventDefault()}
+                            draggable={false}
+                          />
+                        </CarouselItem>
+                      ))}
+                    </CarouselContent>
+                    {openPerson.photos.length > 1 && (
+                      <>
+                        <CarouselPrevious className="left-3 hidden sm:flex" />
+                        <CarouselNext className="right-3 hidden sm:flex" />
+                      </>
+                    )}
+                  </Carousel>
+                  {openPerson.photos.length > 1 && (
+                    <>
+                      <div className="absolute right-3 top-3 rounded-full bg-black/60 px-2 py-0.5 text-xs font-medium text-white">
+                        {galleryIndex + 1} / {openPerson.photos.length}
+                      </div>
+                      <div className="absolute inset-x-0 bottom-2 flex justify-center gap-1.5">
+                        {openPerson.photos.map((_, idx) => (
+                          <button
+                            key={idx}
+                            type="button"
+                            aria-label={`Go to photo ${idx + 1}`}
+                            onClick={() => galleryApi?.scrollTo(idx)}
+                            className={`h-1.5 rounded-full transition-all ${
+                              idx === galleryIndex ? "w-6 bg-white" : "w-1.5 bg-white/60"
+                            }`}
+                          />
+                        ))}
+                      </div>
+                    </>
+                  )}
+                </div>
               )}
               <div className="p-5 space-y-4">
                 <SheetHeader className="text-left">
