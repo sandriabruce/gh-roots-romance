@@ -11,8 +11,7 @@ if ("serviceWorker" in navigator) {
   })();
   const isPreviewHost =
     window.location.hostname.includes("id-preview--") ||
-    window.location.hostname.includes("lovableproject.com") ||
-    window.location.hostname.includes("lovable.app");
+    window.location.hostname.includes("lovableproject.com");
   if (isInIframe || isPreviewHost) {
     navigator.serviceWorker.getRegistrations().then((rs) => rs.forEach((r) => r.unregister()));
   } else {
