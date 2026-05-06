@@ -1,15 +1,20 @@
 import { SafetyBanner } from "@/components/safety/SafetyBanner";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { Heart, X } from "lucide-react";
+import { Heart, X, MessageCircle } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/hooks/useAuth";
 import { useProfile } from "@/hooks/useProfile";
 import { CoupleCard, SAMPLE_COUPLES } from "@/components/brand/CoupleCard";
 import { useEntitlements } from "@/hooks/useEntitlements";
 import { TrialBadge } from "@/components/plan/TrialBadge";
 import { PlanLockOverlay } from "@/components/plan/PlanLockOverlay";
 import { InstallBanner } from "@/components/pwa/InstallBanner";
+import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
+import { Badge } from "@/components/ui/badge";
+import { toast } from "sonner";
 
 type Candidate = {
   id: string;
@@ -18,15 +23,21 @@ type Candidate = {
   location: string | null;
   bio: string | null;
   photos: string[];
+  interests: string[];
+  ethnicity: string | null;
 };
 
 export default function Discover() {
+  const { user } = useAuth();
+  const navigate = useNavigate();
   const { data: profile } = useProfile();
   const { limits, plan, trial } = useEntitlements();
   const [i, setI] = useState(0);
   const [likes, setLikes] = useState(0);
   const [candidates, setCandidates] = useState<Candidate[]>([]);
   const [loading, setLoading] = useState(true);
+  const [openId, setOpenId] = useState<string | null>(null);
+  const [openingChat, setOpeningChat] = useState(false);
   const mode = profile?.mode ?? "romance";
   const accent = mode === "spark" ? "bg-gradient-spark" : "bg-gradient-romance";
   const limit = limits.weeklyMatchLimit;
@@ -47,7 +58,7 @@ export default function Discover() {
       setLoading(true);
       const { data, error } = await supabase
         .from("profiles")
-        .select("id, first_name, age, location, bio, photos")
+        .select("id, first_name, age, location, bio, photos, interests, ethnicity")
         .eq("is_seed", true)
         .eq("banned", false)
         .in("gender", targetGenders)
@@ -63,6 +74,8 @@ export default function Discover() {
           location: row.location as string | null,
           bio: row.bio as string | null,
           photos: Array.isArray(row.photos) ? (row.photos as string[]) : [],
+          interests: Array.isArray(row.interests) ? (row.interests as string[]) : [],
+          ethnicity: (row.ethnicity as string | null) ?? null,
         }));
         // Light shuffle so the deck feels fresh on every visit.
         for (let j = mapped.length - 1; j > 0; j--) {
@@ -78,12 +91,40 @@ export default function Discover() {
 
   const person = candidates.length > 0 ? candidates[i % candidates.length] : null;
   const cover = person?.photos?.[0];
+  const openPerson = candidates.find((c) => c.id === openId) ?? null;
 
   const handleLike = () => {
     if (limitReached) return;
     setLikes((n) => n + 1);
     setI((x) => x + 1);
   };
+
+  async function openChatWith(otherId: string) {
+    if (!user) return;
+    setOpeningChat(true);
+    try {
+      // Look for an existing match between the two users.
+      const { data: existing } = await supabase
+        .from("matches")
+        .select("id,user_a,user_b")
+        .or(`and(user_a.eq.${user.id},user_b.eq.${otherId}),and(user_a.eq.${otherId},user_b.eq.${user.id})`)
+        .limit(1);
+      let matchId = existing?.[0]?.id;
+      if (!matchId) {
+        const { data: created, error } = await supabase
+          .from("matches")
+          .insert({ user_a: user.id, user_b: otherId, status: "active", score: 80 })
+          .select("id")
+          .single();
+        if (error) { toast.error(error.message); return; }
+        matchId = created.id;
+      }
+      setOpenId(null);
+      navigate(`/app/chat/${matchId}`);
+    } finally {
+      setOpeningChat(false);
+    }
+  }
 
   return (
     <div className="space-y-4">
@@ -105,6 +146,13 @@ export default function Discover() {
       ) : (
       <>
       <Card className={`relative aspect-[3/4] overflow-hidden rounded-3xl ${accent} text-white shadow-warm`}>
+        <button
+          type="button"
+          onClick={() => person && setOpenId(person.id)}
+          disabled={!person}
+          className="absolute inset-0 z-10"
+          aria-label={person ? `View ${person.first_name ?? "member"}'s profile` : "Profile"}
+        />
         {cover && (
           <img
             src={cover}
@@ -114,7 +162,7 @@ export default function Discover() {
             onContextMenu={(e) => e.preventDefault()}
           />
         )}
-        <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent p-5">
+        <div className="pointer-events-none absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent p-5">
           {loading ? (
             <h2 className="font-display text-3xl font-bold">Finding people…</h2>
           ) : person ? (
@@ -124,13 +172,14 @@ export default function Discover() {
               </h2>
               {person.location && <p className="text-sm opacity-90">{person.location}</p>}
               {person.bio && <p className="mt-2 text-sm line-clamp-3">{person.bio}</p>}
+              <p className="mt-2 text-xs uppercase tracking-wider opacity-80">Tap to view profile</p>
             </>
           ) : (
             <h2 className="font-display text-2xl font-bold">No profiles to show yet</h2>
           )}
         </div>
       </Card>
-      <div className="flex justify-center gap-6">
+      <div className="relative z-20 flex justify-center gap-6">
         <Button onClick={() => setI((x) => x + 1)} size="lg" variant="outline" disabled={!person} className="h-16 w-16 rounded-full border-2 border-ghana-red"><X className="h-7 w-7 text-ghana-red" /></Button>
         <Button onClick={handleLike} size="lg" disabled={!person} className="h-16 w-16 rounded-full bg-ghana-gold text-ghana-brown hover:bg-ghana-gold/90"><Heart className="h-7 w-7 fill-white" /></Button>
       </div>
@@ -143,6 +192,76 @@ export default function Discover() {
         </div>
       </section>
       <InstallBanner />
+
+      <Sheet open={!!openPerson} onOpenChange={(o) => !o && setOpenId(null)}>
+        <SheetContent side="bottom" className="max-h-[92vh] overflow-y-auto rounded-t-3xl p-0">
+          {openPerson && (
+            <>
+              {openPerson.photos[0] && (
+                <img
+                  src={openPerson.photos[0]}
+                  alt={openPerson.first_name ?? "Member"}
+                  className="h-72 w-full object-cover"
+                  onContextMenu={(e) => e.preventDefault()}
+                />
+              )}
+              <div className="p-5 space-y-4">
+                <SheetHeader className="text-left">
+                  <SheetTitle className="font-display text-2xl text-ghana-brown">
+                    {openPerson.first_name ?? "Member"}{openPerson.age ? `, ${openPerson.age}` : ""}
+                  </SheetTitle>
+                  {openPerson.location && (
+                    <p className="text-sm text-muted-foreground">{openPerson.location}</p>
+                  )}
+                </SheetHeader>
+
+                {openPerson.bio && (
+                  <div>
+                    <h4 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">About</h4>
+                    <p className="mt-1 text-sm text-foreground whitespace-pre-wrap">{openPerson.bio}</p>
+                  </div>
+                )}
+
+                {openPerson.ethnicity && (
+                  <div>
+                    <h4 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Heritage</h4>
+                    <p className="mt-1 text-sm">{openPerson.ethnicity}</p>
+                  </div>
+                )}
+
+                {openPerson.interests.length > 0 && (
+                  <div>
+                    <h4 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Interests</h4>
+                    <div className="mt-2 flex flex-wrap gap-2">
+                      {openPerson.interests.map((tag) => (
+                        <Badge key={tag} variant="secondary" className="rounded-full">{tag}</Badge>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                <div className="sticky bottom-0 -mx-5 mt-2 flex gap-3 border-t bg-background/95 px-5 py-3 backdrop-blur">
+                  <Button
+                    onClick={() => { handleLike(); setOpenId(null); }}
+                    className="flex-1 bg-ghana-gold text-ghana-brown hover:bg-ghana-gold/90"
+                    disabled={limitReached}
+                  >
+                    <Heart className="mr-2 h-4 w-4 fill-current" /> Like
+                  </Button>
+                  <Button
+                    onClick={() => openChatWith(openPerson.id)}
+                    disabled={openingChat}
+                    variant="outline"
+                    className="flex-1 border-ghana-brown text-ghana-brown"
+                  >
+                    <MessageCircle className="mr-2 h-4 w-4" /> Message
+                  </Button>
+                </div>
+              </div>
+            </>
+          )}
+        </SheetContent>
+      </Sheet>
     </div>
   );
 }
