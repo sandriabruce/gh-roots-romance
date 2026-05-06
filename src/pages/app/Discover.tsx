@@ -486,12 +486,7 @@ export default function Discover() {
                   <Button
                     onClick={() => openChatWith(openPerson.id)}
                     disabled={openingChat}
-                    variant={matchStatus === "matched" ? "default" : "outline"}
-                    className={
-                      matchStatus === "matched"
-                        ? "flex-1 bg-ghana-brown text-white hover:bg-ghana-brown/90"
-                        : "flex-1 border-ghana-brown text-ghana-brown"
-                    }
+                    className="flex-1 bg-green-500 text-white hover:bg-green-600"
                   >
                     <MessageCircle className="mr-2 h-4 w-4" />
                     {matchStatus === "matched" ? "Open chat" : "Message"}
