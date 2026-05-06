@@ -1,7 +1,7 @@
 import { SafetyBanner } from "@/components/safety/SafetyBanner";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { Heart, X, MessageCircle, BadgeCheck } from "lucide-react";
+import { Heart, X, MessageCircle, BadgeCheck, Flag, Ban } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
@@ -15,6 +15,24 @@ import { PlanLockOverlay } from "@/components/plan/PlanLockOverlay";
 import { InstallBanner } from "@/components/pwa/InstallBanner";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { Badge } from "@/components/ui/badge";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { toast } from "sonner";
 
 type Candidate = {
@@ -41,6 +59,17 @@ export default function Discover() {
   const [openId, setOpenId] = useState<string | null>(null);
   const [openingChat, setOpeningChat] = useState(false);
   const [likedIds, setLikedIds] = useState<Set<string>>(new Set());
+  const [blockedIds, setBlockedIds] = useState<Set<string>>(() => {
+    try {
+      const raw = localStorage.getItem("blocked-user-ids");
+      return raw ? new Set(JSON.parse(raw) as string[]) : new Set();
+    } catch { return new Set(); }
+  });
+  const [reportFor, setReportFor] = useState<string | null>(null);
+  const [reportReason, setReportReason] = useState<string>("");
+  const [reportDetail, setReportDetail] = useState("");
+  const [reportSubmitting, setReportSubmitting] = useState(false);
+  const [confirmBlockFor, setConfirmBlockFor] = useState<string | null>(null);
   const mode = profile?.mode ?? "romance";
   const accent = mode === "spark" ? "bg-gradient-spark" : "bg-gradient-romance";
   const limit = limits.weeklyMatchLimit;
@@ -81,17 +110,19 @@ export default function Discover() {
           ethnicity: (row.ethnicity as string | null) ?? null,
           verified: !!row.verified,
         }));
+        // Filter out blocked users.
+        const visible = mapped.filter((c) => !blockedIds.has(c.id));
         // Light shuffle so the deck feels fresh on every visit.
-        for (let j = mapped.length - 1; j > 0; j--) {
+        for (let j = visible.length - 1; j > 0; j--) {
           const k = Math.floor(Math.random() * (j + 1));
-          [mapped[j], mapped[k]] = [mapped[k], mapped[j]];
+          [visible[j], visible[k]] = [visible[k], visible[j]];
         }
-        setCandidates(mapped);
+        setCandidates(visible);
       }
       setLoading(false);
     })();
     return () => { cancelled = true; };
-  }, [targetGenders]);
+  }, [targetGenders, blockedIds]);
 
   const person = candidates.length > 0 ? candidates[i % candidates.length] : null;
   const cover = person?.photos?.[0];
@@ -159,6 +190,39 @@ export default function Discover() {
     } finally {
       setOpeningChat(false);
     }
+  }
+
+  function persistBlocked(next: Set<string>) {
+    setBlockedIds(next);
+    try { localStorage.setItem("blocked-user-ids", JSON.stringify(Array.from(next))); } catch { /* ignore */ }
+  }
+
+  async function submitReport() {
+    if (!user || !reportFor || !reportReason) return;
+    setReportSubmitting(true);
+    const { error } = await supabase.from("reports").insert({
+      reporter_id: user.id,
+      reported_id: reportFor,
+      reason: reportReason,
+      detail: reportDetail.trim() || null,
+    });
+    setReportSubmitting(false);
+    if (error) { toast.error(error.message); return; }
+    toast.success("Thanks for the report. Our team will review it.");
+    setReportFor(null);
+    setReportReason("");
+    setReportDetail("");
+  }
+
+  function confirmBlock() {
+    if (!confirmBlockFor) return;
+    const next = new Set(blockedIds);
+    next.add(confirmBlockFor);
+    persistBlocked(next);
+    toast.success("User blocked. You won't see them again.");
+    setConfirmBlockFor(null);
+    setOpenId(null);
+    setI((x) => x + 1);
   }
 
   return (
@@ -293,6 +357,25 @@ export default function Discover() {
                   </div>
                 )}
 
+                <div className="flex gap-2 pt-1">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="text-destructive hover:bg-destructive/10"
+                    onClick={() => setReportFor(openPerson.id)}
+                  >
+                    <Flag className="mr-1.5 h-4 w-4" /> Report
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="text-muted-foreground hover:bg-muted"
+                    onClick={() => setConfirmBlockFor(openPerson.id)}
+                  >
+                    <Ban className="mr-1.5 h-4 w-4" /> Block
+                  </Button>
+                </div>
+
                 <div className="sticky bottom-0 -mx-5 mt-2 flex gap-3 border-t bg-background/95 px-5 py-3 backdrop-blur">
                   <Button
                     onClick={() => { handleLikeFromSheet(openPerson.id); setOpenId(null); }}
@@ -321,6 +404,74 @@ export default function Discover() {
           )}
         </SheetContent>
       </Sheet>
+
+      <Dialog open={!!reportFor} onOpenChange={(o) => { if (!o) { setReportFor(null); setReportReason(""); setReportDetail(""); } }}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Report this profile</DialogTitle>
+            <DialogDescription>
+              Help us keep GH SUƆMƆ safe. Reports are confidential and reviewed by our team.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-2">
+            {[
+              "Scam or asking for money",
+              "Fake or stolen photos",
+              "Inappropriate or offensive",
+              "Underage",
+              "Harassment",
+              "Other",
+            ].map((r) => (
+              <button
+                key={r}
+                type="button"
+                onClick={() => setReportReason(r)}
+                className={`w-full rounded-lg border px-3 py-2 text-left text-sm transition ${
+                  reportReason === r
+                    ? "border-ghana-gold bg-ghana-gold/10 text-ghana-brown"
+                    : "border-border hover:bg-muted"
+                }`}
+              >
+                {r}
+              </button>
+            ))}
+            <textarea
+              value={reportDetail}
+              onChange={(e) => setReportDetail(e.target.value)}
+              maxLength={500}
+              placeholder="Add any details (optional)"
+              className="mt-2 min-h-20 w-full rounded-md border bg-background px-3 py-2 text-sm"
+            />
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setReportFor(null)}>Cancel</Button>
+            <Button
+              onClick={submitReport}
+              disabled={!reportReason || reportSubmitting}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              {reportSubmitting ? "Sending…" : "Submit report"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <AlertDialog open={!!confirmBlockFor} onOpenChange={(o) => !o && setConfirmBlockFor(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Block this user?</AlertDialogTitle>
+            <AlertDialogDescription>
+              You won't see them in Discover again, and they won't appear in your matches. You can manage blocked users later in Safety settings.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={confirmBlock} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+              Block
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
