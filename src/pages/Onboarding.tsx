@@ -376,6 +376,8 @@ export default function Onboarding() {
                   <Row label="Children" value={form.has_children} />
                   <Row label="Looking for" value={form.relationship_type} />
                   <Row label="About" value={form.bio} multiline />
+                  <Row label="Interests" value={form.interests.join(", ")} />
+                  <Row label={form.prompt_q || "Prompt"} value={form.prompt_a} multiline />
                 </dl>
               </div>
             )}
