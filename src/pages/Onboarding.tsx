@@ -93,24 +93,44 @@ export default function Onboarding() {
 
   const age = calcAge(form.date_of_birth);
 
+  function validateStep(s: StepId): string | null {
+    switch (s) {
+      case "welcome": return null;
+      case "first_name":
+        return form.first_name.trim().length >= 2 ? null : "Please enter your first name (at least 2 characters).";
+      case "dob":
+        if (age === null) return "Please enter a valid date of birth.";
+        if (age < 40) return "GH SUƆMƆ is for members 40 and older.";
+        if (age > 110) return "Please enter a valid date of birth.";
+        return null;
+      case "gender": return form.gender ? null : "Please choose an option.";
+      case "interested_in": return form.interested_in ? null : "Please choose an option.";
+      case "country": return form.country ? null : "Please choose your country.";
+      case "city": return form.city.trim().length >= 2 ? null : "Please enter your city or town.";
+      case "ethnicity": return form.ethnicity ? null : "Please choose an option.";
+      case "religion": return form.religion ? null : "Please choose an option.";
+      case "has_children": return form.has_children ? null : "Please choose an option.";
+      case "relationship_type": return form.relationship_type ? null : "Please choose an option.";
+      case "bio":
+        return form.bio.trim().length >= 20 ? null : "Tell us a little more — at least 20 characters.";
+      case "photo":
+        return form.photo ? null : "Please upload a clear photo of your face.";
+      case "interests":
+        return form.interests.length >= 3 ? null : "Pick at least 3 interests so we can find good matches.";
+      case "prompt":
+        if (!form.prompt_q) return "Please choose a prompt.";
+        if (form.prompt_a.trim().length < 20) return "Your answer is a bit short — please write at least 20 characters.";
+        return null;
+      case "review": return null;
+    }
+    return null;
+  }
+
   const canContinue = (() => {
     switch (step) {
       case "welcome": return true;
-      case "first_name": return form.first_name.trim().length >= 2;
-      case "dob": return age !== null && age >= 40 && age <= 110;
-      case "gender": return !!form.gender;
-      case "interested_in": return !!form.interested_in;
-      case "country": return !!form.country;
-      case "city": return form.city.trim().length >= 2;
-      case "ethnicity": return !!form.ethnicity;
-      case "religion": return !!form.religion;
-      case "has_children": return !!form.has_children;
-      case "relationship_type": return !!form.relationship_type;
-      case "bio": return form.bio.trim().length >= 20;
-      case "photo": return !!form.photo;
-      case "interests": return form.interests.length >= 3;
-      case "prompt": return !!form.prompt_q && form.prompt_a.trim().length >= 5;
       case "review": return true;
+      default: return validateStep(step) === null;
     }
   })();
 
@@ -137,6 +157,16 @@ export default function Onboarding() {
 
   async function finish() {
     if (!user) return;
+    // Re-validate every required step before submit
+    for (const s of steps) {
+      const err = validateStep(s);
+      if (err) {
+        toast.error(err);
+        const idx = steps.indexOf(s);
+        if (idx >= 0) setStepIndex(idx);
+        return;
+      }
+    }
     setSubmitting(true);
     const payload = {
       first_name: form.first_name.trim(),
@@ -165,7 +195,11 @@ export default function Onboarding() {
     navigate("/app/discover");
   }
 
-  const next = () => setStepIndex((i) => Math.min(steps.length - 1, i + 1));
+  const next = () => {
+    const err = validateStep(step);
+    if (err) { toast.error(err); return; }
+    setStepIndex((i) => Math.min(steps.length - 1, i + 1));
+  };
   const back = () => setStepIndex((i) => Math.max(0, i - 1));
 
   return (
