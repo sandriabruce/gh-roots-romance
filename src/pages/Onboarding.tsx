@@ -292,27 +292,46 @@ export default function Onboarding() {
 
     // Seed 5 starter matches from is_seed profiles aligned with their preference.
     try {
-      const desiredGender =
+      // Find existing matches for this user so we don't duplicate on re-runs/retries.
+      const { data: existing } = await supabase
+        .from("matches")
+        .select("user_a,user_b")
+        .or(`user_a.eq.${user.id},user_b.eq.${user.id}`);
+      const alreadyMatched = new Set<string>();
+      (existing ?? []).forEach((m) => {
+        const other = m.user_a === user.id ? m.user_b : m.user_a;
+        alreadyMatched.add(other);
+      });
+
+      const targetCount = 5;
+      const remaining = targetCount - alreadyMatched.size;
+      if (remaining <= 0) {
+        // User already has enough matches — skip.
+        // (no-op)
+      } else {
+        const desiredGender =
         form.interested_in === "Women" ? "Woman" :
         form.interested_in === "Men" ? "Man" : null;
-      let seedQuery = supabase
+        let seedQuery = supabase
         .from("profiles")
         .select("id")
         .eq("is_seed", true)
         .eq("onboarded", true)
         .eq("banned", false)
         .neq("id", user.id)
-        .limit(5);
-      if (desiredGender) seedQuery = seedQuery.eq("gender", desiredGender);
-      const { data: seeds } = await seedQuery;
-      if (seeds && seeds.length) {
-        const rows = seeds.map((s) => ({
-          user_a: user.id,
-          user_b: s.id,
-          status: "active" as const,
-          score: 80,
-        }));
-        await supabase.from("matches").insert(rows);
+          .limit(remaining + alreadyMatched.size);
+        if (desiredGender) seedQuery = seedQuery.eq("gender", desiredGender);
+        const { data: seeds } = await seedQuery;
+        const fresh = (seeds ?? []).filter((s) => !alreadyMatched.has(s.id)).slice(0, remaining);
+        if (fresh.length) {
+          const rows = fresh.map((s) => ({
+            user_a: user.id,
+            user_b: s.id,
+            status: "active" as const,
+            score: 80,
+          }));
+          await supabase.from("matches").insert(rows);
+        }
       }
     } catch (e) {
       console.warn("seed match creation failed", e);
