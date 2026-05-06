@@ -1,0 +1,1 @@
+revoke execute on function public.queue_seed_reply() from public, anon, authenticated;
