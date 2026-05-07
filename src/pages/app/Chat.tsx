@@ -95,16 +95,41 @@ export default function Chat() {
   async function send() {
     if (!draft.trim() || !user || !matchId) return;
     setSending(true);
+    const content = draft.trim();
     const { error } = await supabase.from("messages").insert({
       match_id: matchId,
       sender_id: user.id,
-      content: draft.trim(),
+      content,
     });
     setSending(false);
     if (error) { toast.error(error.message); return; }
     setDraft("");
     if (draftKey) { try { localStorage.removeItem(draftKey); } catch { /* ignore */ } }
     qc.invalidateQueries({ queryKey: ["messages", matchId] });
+
+    // If the other party in this match is a seed profile, trigger an AI reply.
+    try {
+      const { data: match } = await supabase
+        .from("matches")
+        .select("user_a, user_b")
+        .eq("id", matchId)
+        .maybeSingle();
+      if (match) {
+        const receiver_id = match.user_a === user.id ? match.user_b : match.user_a;
+        const { data: receiver } = await supabase
+          .from("profiles")
+          .select("is_seed")
+          .eq("id", receiver_id)
+          .maybeSingle();
+        if (receiver?.is_seed) {
+          supabase.functions.invoke("generate-seed-response", {
+            body: { sender_id: user.id, receiver_id, message_content: content },
+          }).then(() => {
+            qc.invalidateQueries({ queryKey: ["messages", matchId] });
+          });
+        }
+      }
+    } catch { /* non-fatal */ }
   }
 
   return (
