@@ -1,8 +1,16 @@
-import { NavLink, Outlet } from "react-router-dom";
-import { Compass, Heart, MessageCircle, ShieldCheck, User, ShieldAlert, Crown } from "lucide-react";
+import { NavLink, Outlet, Link, useNavigate } from "react-router-dom";
+import { Compass, Heart, MessageCircle, ShieldCheck, User, ShieldAlert, Crown, Menu, LogOut, Settings } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { cn } from "@/lib/utils";
 import { Logo } from "@/components/brand/Logo";
+import { Button } from "@/components/ui/button";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { useEffect } from "react";
 import { useProfile } from "@/hooks/useProfile";
 import { computeTrial } from "@/features/trial/entitlements";
@@ -18,7 +26,8 @@ const tabs = [
 ];
 
 export function AppShell() {
-  const { isAdmin } = useAuth();
+  const { isAdmin, signOut } = useAuth();
+  const navigate = useNavigate();
   const { data: profile } = useProfile();
   const allTabs = isAdmin ? [...tabs, { to: "/app/admin", label: "Admin", icon: Crown }] : tabs;
 
@@ -43,8 +52,32 @@ export function AppShell() {
 
   return (
     <div className="flex min-h-screen flex-col bg-gradient-warm">
-      <header className="sticky top-0 z-30 border-b bg-background/90 px-4 py-3 backdrop-blur">
-        <Logo size="sm" />
+      <header className="sticky top-0 z-30 flex items-center justify-between border-b bg-background/90 px-4 py-3 backdrop-blur">
+        <Link to="/" aria-label="Go to home" className="rounded-md focus:outline-none focus:ring-2 focus:ring-ghana-gold">
+          <Logo size="sm" />
+        </Link>
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button variant="ghost" size="icon" aria-label="Open menu">
+              <Menu className="h-5 w-5" />
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end" className="w-48">
+            <DropdownMenuItem onClick={() => navigate("/app/profile")}>
+              <User className="mr-2 h-4 w-4" /> Profile
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={() => navigate("/app/profile/edit")}>
+              <Settings className="mr-2 h-4 w-4" /> Edit profile
+            </DropdownMenuItem>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem
+              onClick={async () => { await signOut(); navigate("/", { replace: true }); }}
+              className="text-ghana-red focus:text-ghana-red"
+            >
+              <LogOut className="mr-2 h-4 w-4" /> Sign out
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
       </header>
       <main className="mx-auto w-full max-w-2xl flex-1 px-4 py-4 pb-24">
         <Outlet />
