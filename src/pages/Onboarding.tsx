@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { useQueryClient } from "@tanstack/react-query";
 import { Progress } from "@/components/ui/progress";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -74,6 +75,7 @@ function calcAge(dob: string): number | null {
 export default function Onboarding() {
   const { user } = useAuth();
   const navigate = useNavigate();
+  const qc = useQueryClient();
   const [form, setForm] = useState<FormState>(initialForm);
   const [stepIndex, setStepIndex] = useState(0);
   const [uploading, setUploading] = useState(false);
@@ -290,6 +292,14 @@ export default function Onboarding() {
     const { error } = await supabase.from("profiles").update(payload).eq("id", user.id);
     if (error) { setSubmitting(false); toast.error(error.message); return; }
 
+    // Prime the cached profile so ProtectedRoute doesn't bounce us back to
+    // /onboarding while the next query is still in flight.
+    qc.setQueryData(["profile", user.id], (prev: Record<string, unknown> | null | undefined) => ({
+      ...(prev ?? { id: user.id }),
+      ...payload,
+    }));
+    await qc.invalidateQueries({ queryKey: ["profile", user.id] });
+
     // Seed 5 starter matches from is_seed profiles aligned with their preference.
     try {
       // Find existing matches for this user so we don't duplicate on re-runs/retries.
@@ -342,7 +352,7 @@ export default function Onboarding() {
       try { localStorage.removeItem(storageKey); } catch { /* ignore */ }
     }
     toast.success("Welcome to GH SUƆMƆ — your profile is live.");
-    navigate("/app/discover");
+    navigate("/app/discover", { replace: true });
   }
 
   const next = () => {
