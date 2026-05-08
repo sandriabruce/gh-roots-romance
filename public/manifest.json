@@ -1,0 +1,15 @@
+{
+  "name": "GH Suɔmɔ – Roots & Romance",
+  "short_name": "GH Suɔmɔ",
+  "description": "A respectful dating community for Ghanaians 40+ at home and in the diaspora.",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#1a0a00",
+  "theme_color": "#b8860b",
+  "icons": [
+    { "src": "/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any maskable" },
+    { "src": "/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable" }
+  ]
+}
