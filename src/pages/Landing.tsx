@@ -8,7 +8,7 @@ export default function Landing() {
   return (
     <div className="min-h-screen bg-gradient-warm">
       <header className="mx-auto flex max-w-5xl items-center justify-between px-4 py-4">
-        <Logo size="sm" />
+        <Link to="/" aria-label="Home"><Logo size="sm" /></Link>
         <Link to="/auth"><Button variant="ghost" className="text-ghana-brown text-slate-50">Sign in</Button></Link>
       </header>
       <section className="mx-auto max-w-3xl px-4 py-12 text-center">
