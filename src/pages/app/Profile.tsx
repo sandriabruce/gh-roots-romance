@@ -45,7 +45,7 @@ export default function Profile() {
             <img
               src={mainPhoto}
               alt={`${displayName}'s profile photo`}
-              className="h-full w-full object-cover"
+              className="h-full w-full object-cover object-top"
             />
           ) : (
             <div className="flex flex-col items-center gap-2 text-muted-foreground">
