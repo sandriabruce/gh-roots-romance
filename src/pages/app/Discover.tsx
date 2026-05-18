@@ -292,7 +292,7 @@ export default function Discover() {
             src={cover}
             alt={person?.first_name ?? "Member"}
             loading="eager"
-            className="absolute inset-0 h-full w-full object-cover no-snap"
+            className="absolute inset-0 h-full w-full object-cover object-top no-snap"
             onContextMenu={(e) => e.preventDefault()}
           />
         )}
