@@ -21,6 +21,9 @@ export default function AuthPage() {
   const [password, setPassword] = useState("");
   const [firstName, setFirstName] = useState("");
   const [busy, setBusy] = useState(false);
+  const [forgotOpen, setForgotOpen] = useState(false);
+  const [forgotEmail, setForgotEmail] = useState("");
+  const [forgotBusy, setForgotBusy] = useState(false);
   const navigate = useNavigate();
 
   async function submit(e: React.FormEvent) {
@@ -56,6 +59,29 @@ export default function AuthPage() {
     }
   }
 
+  async function sendReset(e: React.FormEvent) {
+    e.preventDefault();
+    const parsed = z.string().trim().email().safeParse(forgotEmail);
+    if (!parsed.success) {
+      toast.error("Enter a valid email");
+      return;
+    }
+    setForgotBusy(true);
+    try {
+      const { error } = await supabase.auth.resetPasswordForEmail(parsed.data, {
+        redirectTo: "https://ghsuomo.com/reset-password",
+      });
+      if (error) throw error;
+      toast.success("Check your email for a reset link");
+      setForgotOpen(false);
+      setForgotEmail("");
+    } catch (err: any) {
+      toast.error(err.message ?? "Could not send reset email");
+    } finally {
+      setForgotBusy(false);
+    }
+  }
+
   return (
     <div className="min-h-screen bg-gradient-warm flex items-center justify-center p-4">
       <div className="w-full max-w-md">
@@ -83,11 +109,41 @@ export default function AuthPage() {
             <div>
               <Label htmlFor="pw">Password</Label>
               <Input id="pw" type="password" value={password} onChange={(e) => setPassword(e.target.value)} placeholder="At least 8 characters" required />
+              {mode === "signin" && !forgotOpen && (
+                <button
+                  type="button"
+                  onClick={() => { setForgotOpen(true); setForgotEmail(email); }}
+                  className="mt-2 text-xs text-ghana-gold underline-offset-4 hover:underline"
+                >
+                  Forgot password?
+                </button>
+              )}
             </div>
             <Button type="submit" disabled={busy} className="w-full bg-ghana-gold text-ghana-brown hover:bg-ghana-gold/90 rounded-full h-11">
               {busy ? "Please wait…" : mode === "signup" ? "Create account" : "Sign in"}
             </Button>
           </form>
+          {mode === "signin" && forgotOpen && (
+            <form onSubmit={sendReset} className="mt-4 space-y-2 rounded-2xl border bg-muted/30 p-3">
+              <Label htmlFor="forgotEm" className="text-sm">Reset your password</Label>
+              <Input
+                id="forgotEm"
+                type="email"
+                value={forgotEmail}
+                onChange={(e) => setForgotEmail(e.target.value)}
+                placeholder="you@example.com"
+                required
+              />
+              <div className="flex gap-2">
+                <Button type="submit" disabled={forgotBusy} className="flex-1 bg-ghana-gold text-ghana-brown hover:bg-ghana-gold/90 rounded-full h-10">
+                  {forgotBusy ? "Sending…" : "Send reset link"}
+                </Button>
+                <Button type="button" variant="ghost" onClick={() => setForgotOpen(false)} className="rounded-full h-10">
+                  Cancel
+                </Button>
+              </div>
+            </form>
+          )}
           <button
             onClick={() => setMode(mode === "signup" ? "signin" : "signup")}
             className="mt-4 w-full text-sm underline-offset-4 hover:underline text-ghana-gold"
