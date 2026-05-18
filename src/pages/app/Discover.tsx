@@ -344,7 +344,7 @@ export default function Discover() {
                           <img
                             src={src}
                             alt={`${openPerson.first_name ?? "Member"} photo ${idx + 1}`}
-                            className="h-80 w-full object-cover"
+                            className="h-80 w-full object-cover object-top"
                             onContextMenu={(e) => e.preventDefault()}
                             draggable={false}
                           />
