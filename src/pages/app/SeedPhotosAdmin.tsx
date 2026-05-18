@@ -192,7 +192,7 @@ export default function SeedPhotosAdmin() {
           <div className="grid grid-cols-3 gap-2">
             {photos.map((url) => (
               <div key={url} className="relative group rounded-xl overflow-hidden border bg-muted aspect-square">
-                <img src={url} alt="" className="h-full w-full object-cover" />
+                <img src={url} alt="" className="h-full w-full object-cover object-center" />
                 <button
                   onClick={() => removePhoto(url)}
                   className="absolute top-1 right-1 rounded-full bg-ghana-red text-white p-1 opacity-90 hover:opacity-100"

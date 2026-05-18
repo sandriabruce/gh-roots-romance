@@ -384,7 +384,7 @@ export default function EditProfile() {
                   <img
                     src={r.previewUrl}
                     alt=""
-                    className="h-12 w-12 flex-shrink-0 rounded-md object-cover"
+                    className="h-12 w-12 flex-shrink-0 rounded-md object-cover object-center"
                   />
                   <div className="min-w-0 flex-1">
                     <p className="truncate text-xs font-medium text-foreground" title={r.fileName}>
@@ -421,7 +421,7 @@ export default function EditProfile() {
             <div key={i} className="relative aspect-square rounded-2xl border-2 border-dashed bg-muted overflow-hidden flex items-center justify-center">
               {photos[i] ? (
                 <>
-                  <img src={photos[i]} alt="" className="h-full w-full object-cover no-snap" onContextMenu={(e) => e.preventDefault()} />
+                  <img src={photos[i]} alt="" className="h-full w-full object-cover object-center no-snap" onContextMenu={(e) => e.preventDefault()} />
                   <button
                     type="button"
                     onClick={() => removePhoto(i)}

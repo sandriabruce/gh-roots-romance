@@ -488,7 +488,7 @@ export default function Onboarding() {
                 <div className="mt-2 flex flex-col items-center gap-3">
                   <div className="aspect-square w-48 rounded-2xl border-2 border-dashed bg-muted overflow-hidden flex items-center justify-center">
                     {form.photo ? (
-                      <img src={form.photo} alt="" className="h-full w-full object-cover" />
+                      <img src={form.photo} alt="" className="h-full w-full object-cover object-center" />
                     ) : (
                       <label className="flex h-full w-full cursor-pointer flex-col items-center justify-center text-xs text-muted-foreground">
                         <Upload className="h-6 w-6 mb-1" />
