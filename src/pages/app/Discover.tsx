@@ -292,7 +292,7 @@ export default function Discover() {
             src={cover}
             alt={person?.first_name ?? "Member"}
             loading="eager"
-            className="absolute inset-0 h-full w-full object-cover object-top no-snap"
+            className="absolute inset-0 h-full w-full object-cover object-center no-snap"
             onContextMenu={(e) => e.preventDefault()}
           />
         )}
@@ -344,7 +344,7 @@ export default function Discover() {
                           <img
                             src={src}
                             alt={`${openPerson.first_name ?? "Member"} photo ${idx + 1}`}
-                            className="h-80 w-full object-cover object-top"
+                            className="h-80 w-full object-cover object-center"
                             onContextMenu={(e) => e.preventDefault()}
                             draggable={false}
                           />

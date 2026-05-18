@@ -100,7 +100,7 @@ export function ProfilePreview({ userId }: { userId: string }) {
           <img
             src={cover}
             alt={profile.first_name ?? "Member photo"}
-            className="h-full w-full object-cover object-top no-snap"
+            className="h-full w-full object-cover object-center no-snap"
             onContextMenu={(e) => e.preventDefault()}
           />
         </div>

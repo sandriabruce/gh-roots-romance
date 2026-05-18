@@ -45,7 +45,7 @@ export default function Profile() {
             <img
               src={mainPhoto}
               alt={`${displayName}'s profile photo`}
-              className="h-full w-full object-cover object-top"
+              className="h-full w-full object-cover object-center"
             />
           ) : (
             <div className="flex flex-col items-center gap-2 text-muted-foreground">
@@ -57,7 +57,7 @@ export default function Profile() {
         {photos.length > 1 && (
           <div className="flex gap-2 overflow-x-auto p-2">
             {photos.slice(1).map((p, i) => (
-              <img key={i} src={p} alt={`Photo ${i + 2}`} className="h-16 w-16 rounded-lg object-cover shrink-0" />
+              <img key={i} src={p} alt={`Photo ${i + 2}`} className="h-16 w-16 rounded-lg object-cover object-center shrink-0" />
             ))}
           </div>
         )}
