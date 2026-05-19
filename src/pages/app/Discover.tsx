@@ -332,7 +332,7 @@ export default function Discover() {
           {openPerson && (
             <>
               {openPerson.photos.length > 0 && (
-                <div className="relative min-h-[60vh] bg-muted">
+                <div className="relative h-[55vh] overflow-hidden bg-muted">
                   <Carousel
                     setApi={setGalleryApi}
                     opts={{ loop: openPerson.photos.length > 1, align: "start" }}
@@ -344,7 +344,7 @@ export default function Discover() {
                           <img
                             src={src}
                             alt={`${openPerson.first_name ?? "Member"} photo ${idx + 1}`}
-                            className="h-[60vh] min-h-[60vh] w-full object-cover object-center"
+                            className="h-full w-full object-cover object-center"
                             onContextMenu={(e) => e.preventDefault()}
                             draggable={false}
                           />
